@@ -46,6 +46,7 @@ public class RadioReferencePreference extends Preference
     private static final String PREFERRED_STATE_ID = "preferred.state";
     private static final String PREFERRED_COUNTY_ID = "preferred.county";
     private static final String PREFERRED_SYSTEM_ID = "preferred.system";
+    private static final String PREFERRED_AGENCY_ID = "preferred.agency";
 
     private String mUserName;
     private String mPassword;
@@ -54,6 +55,7 @@ public class RadioReferencePreference extends Preference
     private int mPreferredCountryId = INVALID_ID;
     private int mPreferredStateId = INVALID_ID;
     private int mPreferredCountyId = INVALID_ID;
+    private int mPreferredAgencyId = INVALID_ID;
     private int mPreferredSystemId = INVALID_ID;
 
     /**
@@ -271,7 +273,7 @@ public class RadioReferencePreference extends Preference
     }
 
     /**
-     * Preferred county to use with the service
+     * Preferred system to use with the service
      */
     public int getPreferredSystemId()
     {
@@ -287,5 +289,24 @@ public class RadioReferencePreference extends Preference
     {
         mPreferredSystemId = systemId;
         mPreferences.putInt(PREFERRED_SYSTEM_ID, mPreferredSystemId);
+    }
+
+    /**
+     * Preferred agency to use with the service
+     */
+    public int getPreferredAgencyId()
+    {
+        if(mPreferredAgencyId < 0)
+        {
+            mPreferredAgencyId = mPreferences.getInt(PREFERRED_AGENCY_ID, INVALID_ID);
+        }
+
+        return mPreferredAgencyId;
+    }
+
+    public void setPreferredAgencyId(int agencyId)
+    {
+        mPreferredAgencyId = agencyId;
+        mPreferences.putInt(PREFERRED_AGENCY_ID, mPreferredAgencyId);
     }
 }

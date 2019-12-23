@@ -1,18 +1,24 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2019 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 
 package io.github.dsheirer.gui.playlist.radioreference;
 
@@ -29,6 +35,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -72,6 +79,7 @@ public class FrequencyTableView extends GridPane
     {
         mRadioReference = radioReference;
 
+        setPadding(new Insets(5, 5, 5,5));
         setHgap(5.0);
         setVgap(5.0);
 
@@ -216,22 +224,27 @@ public class FrequencyTableView extends GridPane
             TableColumn frequencyColumn = new TableColumn();
             frequencyColumn.setText("Frequency");
             frequencyColumn.setCellValueFactory(new FrequencyCellValueFactory());
+            frequencyColumn.setPrefWidth(100);
 
             TableColumn modeColumn = new TableColumn();
             modeColumn.setText("Mode");
             modeColumn.setCellValueFactory(new ModeCellValueFactory());
+            modeColumn.setPrefWidth(100);
 
             TableColumn toneColumn = new TableColumn();
             toneColumn.setText("Tone");
             toneColumn.setCellValueFactory(new PropertyValueFactory<>("tone"));
+            toneColumn.setPrefWidth(100);
 
             TableColumn alphaTagColumn = new TableColumn();
             alphaTagColumn.setText("Alpha Tag");
             alphaTagColumn.setCellValueFactory(new PropertyValueFactory<>("alphaTag"));
+            alphaTagColumn.setPrefWidth(125);
 
             TableColumn descriptionColumn = new TableColumn();
             descriptionColumn.setText("Description");
             descriptionColumn.setCellValueFactory(new PropertyValueFactory<>("description"));
+            descriptionColumn.setPrefWidth(525);
 
             mFrequencyTableView.getColumns().addAll(frequencyColumn, modeColumn, toneColumn, alphaTagColumn, descriptionColumn);
         }

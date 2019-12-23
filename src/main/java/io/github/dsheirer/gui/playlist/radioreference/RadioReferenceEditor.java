@@ -25,10 +25,12 @@ package io.github.dsheirer.gui.playlist.radioreference;
 import io.github.dsheirer.gui.JavaFxWindowManager;
 import io.github.dsheirer.gui.radioreference.LoginDialogViewRequest;
 import io.github.dsheirer.preference.UserPreferences;
+import io.github.dsheirer.preference.radioreference.RadioReferencePreference;
 import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.type.Agency;
 import io.github.dsheirer.rrapi.type.AgencyInfo;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
+import io.github.dsheirer.rrapi.type.Category;
 import io.github.dsheirer.rrapi.type.Country;
 import io.github.dsheirer.rrapi.type.CountryInfo;
 import io.github.dsheirer.rrapi.type.County;
@@ -50,13 +52,15 @@ import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
+import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.control.Separator;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -95,7 +99,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
     private Button mLoginButton;
     private HBox mCountryBox;
     private ComboBox<Country> mCountryComboBox;
-    private VBox mContentBox;
+    private SplitPane mSplitPane;
     private HBox mCountryEntityBox;
     private ListView<State> mStateListView;
     private ListView<Agency> mCountryAgencyListView;
@@ -110,6 +114,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
     private Map<Integer,Type> mTypesMap = new TreeMap<>();
     private Map<Integer,Tag> mTagsMap = new TreeMap<>();
     private FrequencyTableView mFrequencyTableView;
+    private TrunkedSystemView mTrunkedSystemView;
 
     public RadioReferenceEditor(UserPreferences userPreferences, JavaFxWindowManager manager)
     {
@@ -120,9 +125,9 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         IconFontFX.register(jiconfont.icons.font_awesome.FontAwesome.getIconFont());
 
         setTop(getTopBox());
-        setCenter(getContentBox());
+        setCenter(getSplitPane());
         checkAccount();
-        refreshFlavorsTypesAndTags();
+        refreshLookupTables();
         refreshCountries();
     }
 
@@ -154,7 +159,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         }
     }
 
-    private void refreshFlavorsTypesAndTags()
+    private void refreshLookupTables()
     {
         if(mRadioReference.hasCredentials())
         {
@@ -178,7 +183,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
                     }
                     catch(RadioReferenceException rre)
                     {
-                        mLog.error("Error refreshing flavors, types and tags maps", rre);
+                        mLog.error("Error refreshing flavors, modes, types and tags lookup maps", rre);
                     }
                 }
             });
@@ -231,6 +236,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         getCountryAgencyListView().getItems().clear();
 
         final int preferredStateId = mUserPreferences.getRadioReferencePreference().getPreferredStateId();
+        final int preferredAgencyId = mUserPreferences.getRadioReferencePreference().getPreferredAgencyId();
 
         if(country != null && mRadioReference.hasCredentials())
         {
@@ -271,22 +277,34 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
                                     if(states != null && !states.isEmpty())
                                     {
                                         getStateListView().getItems().addAll(states);
+
+                                        if(preferredStateId >= 0)
+                                        {
+                                            for(State state: states)
+                                            {
+                                                if(state.getStateId() == preferredStateId)
+                                                {
+                                                    getStateListView().getSelectionModel().select(state);
+                                                    getStateListView().scrollTo(state);
+                                                    continue;
+                                                }
+                                            }
+                                        }
                                     }
 
                                     if(agencies != null && !agencies.isEmpty())
                                     {
                                         getCountryAgencyListView().getItems().addAll(agencies);
-                                    }
 
-                                    if(preferredStateId >= 0)
-                                    {
-                                        for(State state: states)
+                                        if(preferredAgencyId >= 0)
                                         {
-                                            if(state.getStateId() == preferredStateId)
+                                            for(Agency agency: agencies)
                                             {
-                                                getStateListView().getSelectionModel().select(state);
-                                                getStateListView().scrollTo(state);
-                                                continue;
+                                                if(agency.getAgencyId() == preferredAgencyId)
+                                                {
+                                                    getCountryAgencyListView().getSelectionModel().select(agency);
+                                                    getCountryAgencyListView().scrollTo(agency);
+                                                }
                                             }
                                         }
                                     }
@@ -310,6 +328,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         getStateAgencyListView().getItems().clear();
 
         final int preferredCountyId = mUserPreferences.getRadioReferencePreference().getPreferredCountyId();
+        final int preferredAgencyId = mUserPreferences.getRadioReferencePreference().getPreferredAgencyId();
 
         if(state != null && mRadioReference.hasCredentials())
         {
@@ -354,22 +373,34 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
                                     if(counties != null && !counties.isEmpty())
                                     {
                                         getCountyListView().getItems().addAll(counties);
+
+                                        if(preferredCountyId >= 0)
+                                        {
+                                            for(County county: counties)
+                                            {
+                                                if(county.getCountyId() == preferredCountyId)
+                                                {
+                                                    getCountyListView().getSelectionModel().select(county);
+                                                    getCountyListView().scrollTo(county);
+                                                    continue;
+                                                }
+                                            }
+                                        }
                                     }
 
                                     if(agencies != null && !agencies.isEmpty())
                                     {
                                         getStateAgencyListView().getItems().addAll(agencies);
-                                    }
 
-                                    if(preferredCountyId >= 0)
-                                    {
-                                        for(County county: counties)
+                                        if(preferredAgencyId >= 0)
                                         {
-                                            if(county.getCountyId() == preferredCountyId)
+                                            for(Agency agency: agencies)
                                             {
-                                                getCountyListView().getSelectionModel().select(county);
-                                                getCountyListView().scrollTo(county);
-                                                continue;
+                                                if(agency.getAgencyId() == preferredAgencyId)
+                                                {
+                                                    getStateAgencyListView().getSelectionModel().select(agency);
+                                                    getStateAgencyListView().scrollTo(agency);
+                                                }
                                             }
                                         }
                                     }
@@ -392,6 +423,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         getSystemListView().getItems().clear();
         getCountyAgencyListView().getItems().clear();
         final int preferredSystemId = mUserPreferences.getRadioReferencePreference().getPreferredSystemId();
+        final int preferredAgencyId = mUserPreferences.getRadioReferencePreference().getPreferredAgencyId();
 
         if(county != null && mRadioReference.hasCredentials())
         {
@@ -403,7 +435,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
                     try
                     {
                         CountyInfo countyInfo = mRadioReference.getService().getCountyInfo(county.getCountyId());
-                        getFrequencyTableView().update(COUNTY_LABEL, countyInfo.getName(), countyInfo.getCategories());
+                        setFrequencyViewCategories(COUNTY_LABEL, countyInfo.getName(), countyInfo.getCategories());
                         List<System> systems = countyInfo.getSystems();
                         Collections.sort(systems, new Comparator<System>()
                         {
@@ -434,28 +466,39 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
                                     if(systems != null && !systems.isEmpty())
                                     {
                                         getSystemListView().getItems().addAll(systems);
+
+                                        if(preferredSystemId >= 0)
+                                        {
+                                            for(System system: systems)
+                                            {
+                                                if(system.getSystemId() == preferredSystemId)
+                                                {
+                                                    getSystemListView().getSelectionModel().select(system);
+                                                    getSystemListView().scrollTo(system);
+                                                    continue;
+                                                }
+                                            }
+                                        }
                                     }
 
                                     if(agencies != null && !agencies.isEmpty())
                                     {
                                         getCountyAgencyListView().getItems().addAll(agencies);
-                                    }
 
-                                    if(preferredSystemId >= 0)
-                                    {
-                                        for(System system: systems)
+                                        if(preferredAgencyId >= 0)
                                         {
-                                            if(system.getSystemId() == preferredSystemId)
+                                            for(Agency agency: agencies)
                                             {
-                                                getSystemListView().getSelectionModel().select(system);
-                                                getSystemListView().scrollTo(system);
-                                                continue;
+                                                if(agency.getAgencyId() == preferredAgencyId)
+                                                {
+                                                    getCountyAgencyListView().getSelectionModel().select(agency);
+                                                    getCountyAgencyListView().scrollTo(agency);
+                                                }
                                             }
                                         }
                                     }
                                 }
                             });
-
                         }
                     }
                     catch(RadioReferenceException rre)
@@ -467,26 +510,70 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         }
     }
 
+    /**
+     * Sets the argument as the results view node in the lower half of the split pane
+     * @param node to view
+     */
+    private void setResultsView(Node node)
+    {
+        if(getSplitPane().getItems().size() == 2)
+        {
+            getSplitPane().getItems().remove(1);
+            getSplitPane().getItems().add(node);
+        }
+        else
+        {
+            mLog.error("Error - expected 2 nodes in split pane but encountered: " + getSplitPane().getItems().size());
+        }
+    }
+
+    /**
+     * Updates the frequency list view with the label and value and updates the categories list
+     * @param label to use for the value
+     * @param value of the agency name
+     * @param categories categories for an agency
+     */
+    private void setFrequencyViewCategories(String label, String value, List<Category> categories)
+    {
+        Runnable runnable = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                setResultsView(getFrequencyTableView());
+                getFrequencyTableView().clear();
+                getFrequencyTableView().update(label, value, categories);
+            }
+        };
+
+        if(Platform.isFxApplicationThread())
+        {
+            runnable.run();
+        }
+        else
+        {
+            Platform.runLater(runnable);
+        }
+    }
+
     private void setSystem(System system)
     {
-//        if(system != null)
-//        {
-//            getResultsLabel().setText(system.getName());
-//        }
-//        else
-//        {
-//            getResultsLabel().setText(null);
-//        }
+        if(system != null)
+        {
+            mUserPreferences.getRadioReferencePreference().setPreferredAgencyId(RadioReferencePreference.INVALID_ID);
+            mUserPreferences.getRadioReferencePreference().setPreferredSystemId(system.getSystemId());
+            setResultsView(getTrunkedSystemView());
+            getTrunkedSystemView().setSystem(system);
+        }
     }
 
     private void setAgency(final Agency agency)
     {
-        if(agency == null)
+        if(agency != null)
         {
-            getFrequencyTableView().clear();
-        }
-        else
-        {
+            mUserPreferences.getRadioReferencePreference().setPreferredSystemId(RadioReferencePreference.INVALID_ID);
+            mUserPreferences.getRadioReferencePreference().setPreferredAgencyId(agency.getAgencyId());
+
             ThreadPool.SCHEDULED.submit(new Runnable()
             {
                 @Override
@@ -495,7 +582,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
                     try
                     {
                         final AgencyInfo agencyInfo = mRadioReference.getService().getAgencyInfo(agency);
-                        getFrequencyTableView().update(AGENCY_LABEL, agencyInfo.getName(), agencyInfo.getCategories());
+                        setFrequencyViewCategories(AGENCY_LABEL, agencyInfo.getName(), agencyInfo.getCategories());
                     }
                     catch(RadioReferenceException rre)
                     {
@@ -599,28 +686,32 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         return mLoginButton;
     }
 
-    private VBox getContentBox()
+    private SplitPane getSplitPane()
     {
-        if(mContentBox == null)
+        if(mSplitPane == null)
         {
-            mContentBox = new VBox();
-            mContentBox.setPadding(new Insets(5,5,5,5));
-            mContentBox.setSpacing(5.0);
-
+            VBox vbox = new VBox();
+            vbox.setPadding(new Insets(5,5,10,5));
+            vbox.setSpacing(5.0);
             VBox.setVgrow(getCountryEntityBox(), Priority.SOMETIMES);
-            mContentBox.getChildren().add(getCountryEntityBox());
+            vbox.getChildren().add(getCountryEntityBox());
             VBox.setVgrow(getStateEntityBox(), Priority.SOMETIMES);
-            mContentBox.getChildren().add(getStateEntityBox());
+            vbox.getChildren().add(getStateEntityBox());
             VBox.setVgrow(getCountyEntityBox(), Priority.SOMETIMES);
-            mContentBox.getChildren().add(getCountyEntityBox());
-            mContentBox.getChildren().add(new Separator());
-            VBox.setVgrow(getFrequencyTableView(), Priority.ALWAYS);
-            mContentBox.getChildren().add(getFrequencyTableView());
+            vbox.getChildren().add(getCountyEntityBox());
+
+            mSplitPane = new SplitPane();
+            mSplitPane.setOrientation(Orientation.VERTICAL);
+            mSplitPane.getItems().addAll(vbox, getFrequencyTableView());
         }
 
-        return mContentBox;
+        return mSplitPane;
     }
 
+    /**
+     * Frequency table view for displaying frequency search results
+     * @return node
+     */
     private FrequencyTableView getFrequencyTableView()
     {
         if(mFrequencyTableView == null)
@@ -629,6 +720,20 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         }
 
         return mFrequencyTableView;
+    }
+
+    /**
+     * Trunked radio system view for displaying a trunked system
+     * @return node
+     */
+    private TrunkedSystemView getTrunkedSystemView()
+    {
+        if(mTrunkedSystemView == null)
+        {
+            mTrunkedSystemView = new TrunkedSystemView(mRadioReference);
+        }
+
+        return mTrunkedSystemView;
     }
 
     private HBox getCountryBox()
@@ -856,7 +961,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         if(mCountyEntityBox == null)
         {
             VBox stateBox = new VBox();
-            stateBox.getChildren().addAll(new Label("Systems"), getSystemListView());
+            stateBox.getChildren().addAll(new Label("Trunked Radio Systems"), getSystemListView());
             VBox agencyBox = new VBox();
             agencyBox.getChildren().addAll(new Label("County Agencies"), getCountyAgencyListView());
             mCountyEntityBox = new HBox();
@@ -938,7 +1043,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         if(mRadioReference.hasCredentials())
         {
             checkAccount();
-            refreshFlavorsTypesAndTags();
+            refreshLookupTables();
             refreshCountries();
         }
     }

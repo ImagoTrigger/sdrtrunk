@@ -96,6 +96,10 @@ public class PlaylistEditor extends Application
             //File Menu
             Menu fileMenu = new Menu("File");
 
+            MenuItem newPlaylistItem = new MenuItem("New Playlist ...");
+            //TODO: implement
+            fileMenu.getItems().add(newPlaylistItem);
+
             MenuItem openPlaylistItem = new MenuItem("Open Playlist ...");
             //TODO: implement
             fileMenu.getItems().add(openPlaylistItem);
@@ -121,6 +125,7 @@ public class PlaylistEditor extends Application
         if(mTabPane == null)
         {
             mTabPane = new TabPane();
+            mTabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
             mTabPane.getTabs().addAll(getChannelsTab(), getAliasesTab(), getStreamingTab(), getRadioReferenceTab());
         }
 
