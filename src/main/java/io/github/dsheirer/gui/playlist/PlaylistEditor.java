@@ -28,6 +28,7 @@ import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.gui.JavaFxWindowManager;
+import io.github.dsheirer.gui.playlist.channel.ChannelEditor;
 import io.github.dsheirer.gui.playlist.manager.PlaylistManagerEditor;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceEditor;
 import io.github.dsheirer.icon.IconManager;
@@ -89,6 +90,8 @@ public class PlaylistEditor extends Application
             new RecorderManager(aliasModel, mUserPreferences),
             new SourceManager(tunerModel, new SettingsManager(tunerConfigurationModel), mUserPreferences),
             aliasModel, mUserPreferences));
+
+        mPlaylistManager.init();
 
         mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences);
     }
@@ -162,6 +165,7 @@ public class PlaylistEditor extends Application
         if(mChannelsTab == null)
         {
             mChannelsTab = new Tab("Channels");
+            mChannelsTab.setContent(new ChannelEditor(mPlaylistManager.getChannelModel(), mUserPreferences));
         }
 
         return mChannelsTab;

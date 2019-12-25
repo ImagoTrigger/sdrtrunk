@@ -139,6 +139,14 @@ public class PlaylistManager implements Listener<ChannelEvent>
     }
 
     /**
+     * Channel model managed by this playlist manager
+     */
+    public ChannelModel getChannelModel()
+    {
+        return mChannelModel;
+    }
+
+    /**
      * Loads playlist from the current playlist file, or the default playlist file,
      * as specified in the current SDRTRunk system settings
      */

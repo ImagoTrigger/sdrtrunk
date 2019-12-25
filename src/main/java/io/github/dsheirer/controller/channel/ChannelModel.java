@@ -26,13 +26,15 @@ import io.github.dsheirer.controller.channel.ChannelEvent.Event;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Channel Model
@@ -54,12 +56,31 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
         "Source", "Decoder", "Auto-Start"};
     private static final String VALUE_YES = "Yes";
 
-    private List<Channel> mChannels = new CopyOnWriteArrayList<>();
-    private List<Channel> mTrafficChannels = new CopyOnWriteArrayList<>();
+    private ObservableList<Channel> mChannels = FXCollections.observableArrayList();
+    private ObservableList<Channel> mTrafficChannels = FXCollections.observableArrayList();
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster();
 
     public ChannelModel()
     {
+        ChannelListChangeListener changeListener = new ChannelListChangeListener();
+        mChannels.addListener(changeListener);
+        mTrafficChannels.addListener(changeListener);
+    }
+
+    /**
+     * Observable list of channel configurations managed by this model
+     */
+    public ObservableList<Channel> channelList()
+    {
+        return mChannels;
+    }
+
+    /**
+     * Observable list of traffic channel configurations managed by this model
+     */
+    public ObservableList<Channel> trafficChannelList()
+    {
+        return mTrafficChannels;
     }
 
     /**
@@ -222,8 +243,6 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
                 break;
         }
 
-        mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_ADD));
-
         return index;
     }
 
@@ -252,8 +271,6 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
                 default:
                     break;
             }
-
-            mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_DELETE));
         }
     }
 
@@ -429,5 +446,27 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
     public void createChannel(DecoderType decoderType, long frequency)
     {
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    /**
+     * Observable list change listener for both channels and traffic channels lists
+     */
+    public class ChannelListChangeListener implements ListChangeListener<Channel>
+    {
+        @Override
+        public void onChanged(Change<? extends Channel> change)
+        {
+            while(change.next())
+            {
+                for(Channel channel: change.getAddedSubList())
+                {
+                    mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_ADD));
+                }
+                for(Channel channel: change.getRemoved())
+                {
+                    mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_DELETE));
+                }
+            }
+        }
     }
 }

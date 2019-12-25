@@ -340,6 +340,7 @@ public class PlaylistManagerEditor extends HBox
                     if(selected != null)
                     {
                         getPlaylistPathView().getItems().remove(selected);
+                        savePlaylistsPreference();
                     }
                 }
             });
