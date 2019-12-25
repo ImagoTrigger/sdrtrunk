@@ -183,11 +183,15 @@ public class FrequencyTableView extends GridPane
                 clear();
                 getFrequencyTableLabel().setText(label);
                 getFrequencyTableNameLabel().setText(name);
-                if(categories != null)
+                if(categories != null && !categories.isEmpty())
                 {
                     getCategoryComboBox().getItems().add(ALL_CATEGORIES);
                     getCategoryComboBox().getItems().addAll(categories);
                     getCategoryComboBox().getSelectionModel().select(ALL_CATEGORIES);
+                }
+                else
+                {
+                    setLoading(false);
                 }
             }
         });

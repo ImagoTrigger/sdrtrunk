@@ -97,6 +97,19 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     }
 
     /**
+     * Removes all broadcast configurations and shuts down any running broadcasters.
+     */
+    public void clear()
+    {
+        List<BroadcastConfiguration> configsToRemove = new ArrayList<>(mBroadcastConfigurations);
+
+        for(BroadcastConfiguration configToRemove: configsToRemove)
+        {
+            removeBroadcastConfiguration(configToRemove);
+        }
+    }
+
+    /**
      * List of broadcastAudio configuration names
      */
     public List<String> getBroadcastConfigurationNames()

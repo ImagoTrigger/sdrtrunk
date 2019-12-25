@@ -226,7 +226,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         tunerModel.addListener(this);
 
         PlaylistManager playlistManager = new PlaylistManager(aliasModel, mBroadcastModel, mChannelModel,
-            channelMapModel, mUserPreferences);
+            channelMapModel, mUserPreferences, mChannelProcessingManager);
 
         playlistManager.init();
 

@@ -234,6 +234,8 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
     {
         getStateListView().getItems().clear();
         getCountryAgencyListView().getItems().clear();
+        getFrequencyTableView().update(null, null, Collections.emptyList());
+        getTrunkedSystemView().setSystem(null);
 
         final int preferredStateId = mUserPreferences.getRadioReferencePreference().getPreferredStateId();
         final int preferredAgencyId = mUserPreferences.getRadioReferencePreference().getPreferredAgencyId();

@@ -39,6 +39,8 @@ import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -55,6 +57,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.DecimalFormat;
+import java.util.EnumSet;
 import java.util.List;
 
 
@@ -76,6 +79,8 @@ public class TrunkedSystemView extends GridPane
     private Label mVoiceLabel;
     private TableView<Site> mSiteTableView;
     private ListView<SiteFrequency> mSiteFrequencyListView;
+    private Button mAddSiteButton;
+    private ComboBox<SiteChannel> mSiteChannelsComboBox;
 
     /**
      * Constructs an instance
@@ -128,6 +133,25 @@ public class TrunkedSystemView extends GridPane
         GridPane.setConstraints(getSiteFrequencyListView(), 0, 7, 2, 3);
         GridPane.setHgrow(getSiteFrequencyListView(), Priority.ALWAYS);
         getChildren().add(getSiteFrequencyListView());
+
+        Label playlist = new Label("Create Channel Configuration");
+        GridPane.setConstraints(playlist, 2, 6, 2, 1);
+        GridPane.setHalignment(playlist, HPos.LEFT);
+        GridPane.setHgrow(playlist, Priority.ALWAYS);
+        getChildren().add(playlist);
+
+        Label include = new Label("Include Frequencies:");
+        GridPane.setConstraints(include, 2, 7, 1, 1);
+        GridPane.setHalignment(include, HPos.RIGHT);
+        getChildren().add(include);
+
+        GridPane.setConstraints(getSiteChannelsComboBox(), 3, 7, 1, 1);
+        GridPane.setHgrow(getSiteChannelsComboBox(), Priority.ALWAYS);
+        getChildren().addAll(getSiteChannelsComboBox());
+
+        GridPane.setConstraints(getAddSiteButton(), 3, 8, 1, 1);
+        GridPane.setHgrow(getAddSiteButton(), Priority.ALWAYS);
+        getChildren().addAll(getAddSiteButton());
     }
 
     /**
@@ -138,10 +162,10 @@ public class TrunkedSystemView extends GridPane
     {
         clear();
 
-        setLoading(true);
-
         if(system != null)
         {
+            setLoading(true);
+
             ThreadPool.SCHEDULED.submit(new Runnable()
             {
                 @Override
@@ -315,6 +339,20 @@ public class TrunkedSystemView extends GridPane
                     if(selected != null)
                     {
                         getSiteFrequencyListView().getItems().addAll(selected.getSiteFrequencies());
+
+                        EnumSet<SiteChannel> siteChannels = SiteChannel.fromSiteFrequencies(selected.getSiteFrequencies());
+
+                        getSiteChannelsComboBox().getItems().clear();
+                        getSiteChannelsComboBox().getItems().addAll(siteChannels);
+
+                        if(siteChannels.contains(SiteChannel.CONTROL))
+                        {
+                            getSiteChannelsComboBox().getSelectionModel().select(SiteChannel.CONTROL);
+                        }
+                        else
+                        {
+                            getSiteChannelsComboBox().getSelectionModel().select(SiteChannel.ALL);
+                        }
                     }
                 }
             });
@@ -360,6 +398,27 @@ public class TrunkedSystemView extends GridPane
         }
     }
 
+    private ComboBox<SiteChannel> getSiteChannelsComboBox()
+    {
+        if(mSiteChannelsComboBox == null)
+        {
+            mSiteChannelsComboBox = new ComboBox<>();
+            mSiteChannelsComboBox.getItems().addAll(SiteChannel.values());
+        }
+
+        return mSiteChannelsComboBox;
+    }
+
+    private Button getAddSiteButton()
+    {
+        if(mAddSiteButton == null)
+        {
+            mAddSiteButton = new Button("Add To Playlist");
+        }
+
+        return mAddSiteButton;
+    }
+
     public class SiteFrequencyListCell extends ListCell<SiteFrequency>
     {
         private final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat("0.00000");
@@ -395,7 +454,8 @@ public class TrunkedSystemView extends GridPane
             }
             else
             {
-                mFrequency.setText(FREQUENCY_FORMATTER.format(item.getFrequency()));
+                String text = item.getLogicalChannelNumber() + ": " + FREQUENCY_FORMATTER.format(item.getFrequency());
+                mFrequency.setText(text);
 
                 String use = item.getUse();
 
