@@ -147,6 +147,14 @@ public class PlaylistManager implements Listener<ChannelEvent>
     }
 
     /**
+     * Alias model managed by this playlist manager
+     */
+    public AliasModel getAliasModel()
+    {
+        return mAliasModel;
+    }
+
+    /**
      * Loads playlist from the current playlist file, or the default playlist file,
      * as specified in the current SDRTRunk system settings
      */

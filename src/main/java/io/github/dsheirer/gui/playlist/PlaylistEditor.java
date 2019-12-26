@@ -165,7 +165,7 @@ public class PlaylistEditor extends Application
         if(mChannelsTab == null)
         {
             mChannelsTab = new Tab("Channels");
-            mChannelsTab.setContent(new ChannelEditor(mPlaylistManager.getChannelModel(), mUserPreferences));
+            mChannelsTab.setContent(new ChannelEditor(mPlaylistManager, mUserPreferences));
         }
 
         return mChannelsTab;
