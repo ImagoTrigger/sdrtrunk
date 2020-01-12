@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@ import io.github.dsheirer.source.config.SourceConfiguration;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -109,6 +111,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             {
                 getAliasListComboBox().getItems().add(aliasListName);
             }
+
             getAliasListComboBox().getSelectionModel().select(aliasListName);
         }
 
@@ -234,8 +237,17 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         if(mAliasListComboBox == null)
         {
             mAliasListComboBox = new ComboBox<>();
+            mAliasListComboBox.setEditable(true);
             mAliasListComboBox.setMaxWidth(Double.MAX_VALUE);
             mAliasListComboBox.getItems().addAll(mAliasModel.getListNames());
+            mAliasListComboBox.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    modifiedProperty().set(true);
+                }
+            });
         }
 
         return mAliasListComboBox;

@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -344,6 +344,27 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
                         StateInfo stateInfo = mRadioReference.getService().getStateInfo(state.getStateId());
 
                         List<County> counties = stateInfo.getCounties();
+
+                        //Pre-cache county information instances
+                        ThreadPool.SCHEDULED.submit(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                try
+                                {
+                                    for(County county: counties)
+                                    {
+                                        mRadioReference.getService().getCountyInfo(county.getCountyId());
+                                    }
+                                }
+                                catch(RadioReferenceException rre)
+                                {
+                                    //Do nothing, this just an attempt to pre-cache the counties
+                                }
+                            }
+                        });
+
                         Collections.sort(counties, new Comparator<County>()
                         {
                             @Override
