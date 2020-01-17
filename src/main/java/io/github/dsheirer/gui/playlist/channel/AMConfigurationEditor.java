@@ -22,15 +22,12 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
-import io.github.dsheirer.gui.playlist.decoder.AuxDecoderConfigurationEditor;
-import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
 import io.github.dsheirer.gui.playlist.source.SingleFrequencyEditor;
 import io.github.dsheirer.gui.playlist.source.SourceConfigurationEditor;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.am.DecodeConfigAM;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
-import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
-import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.record.RecorderType;
@@ -40,54 +37,41 @@ import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.TitledPane;
-import javafx.scene.control.Toggle;
-import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.GridPane;
 import javafx.scene.text.TextAlignment;
-import org.controlsfx.control.SegmentedButton;
 import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * Narrow-Band FM channel configuration editor
+ * AM channel configuration editor
  */
-public class NBFMConfigurationEditor extends ChannelConfigurationEditor
+public class AMConfigurationEditor extends ChannelConfigurationEditor
 {
-    private final static Logger mLog = LoggerFactory.getLogger(NBFMConfigurationEditor.class);
-    private TitledPane mAuxDecoderPane;
+    private final static Logger mLog = LoggerFactory.getLogger(AMConfigurationEditor.class);
     private TitledPane mDecoderPane;
-    private TitledPane mEventLogPane;
     private TitledPane mRecordPane;
     private TitledPane mSourcePane;
     private ToggleSwitch mAudioRecordSwitch;
     private ToggleSwitch mBasebandRecordSwitch;
-    private SegmentedButton mBandwidthButton;
     private SourceConfigurationEditor mSourceConfigurationEditor;
-    private AuxDecoderConfigurationEditor mAuxDecoderConfigurationEditor;
-    private EventLogConfigurationEditor mEventLogConfigurationEditor;
 
     /**
      * Constructs an instance
      * @param playlistManager
      */
-    public NBFMConfigurationEditor(PlaylistManager playlistManager)
+    public AMConfigurationEditor(PlaylistManager playlistManager)
     {
         super(playlistManager);
         getTitledPanesBox().getChildren().add(getSourcePane());
         getTitledPanesBox().getChildren().add(getDecoderPane());
-        getTitledPanesBox().getChildren().add(getAuxDecoderPane());
-        getTitledPanesBox().getChildren().add(getEventLogPane());
         getTitledPanesBox().getChildren().add(getRecordPane());
     }
 
     @Override
     public DecoderType getDecoderType()
     {
-        return DecoderType.NBFM;
+        return DecoderType.AM;
     }
 
     private TitledPane getSourcePane()
@@ -106,47 +90,12 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         if(mDecoderPane == null)
         {
             mDecoderPane = new TitledPane();
-            mDecoderPane.setText("Decoder: NBFM");
+            mDecoderPane.setText("Decoder: AM");
             mDecoderPane.setExpanded(false);
-
-            GridPane gridPane = new GridPane();
-            gridPane.setPadding(new Insets(10,10,10,10));
-            gridPane.setHgap(10);
-
-            Label bandwidthLabel = new Label("Channel Bandwidth");
-            GridPane.setHalignment(bandwidthLabel, HPos.LEFT);
-            GridPane.setConstraints(bandwidthLabel, 0, 0);
-            gridPane.getChildren().add(bandwidthLabel);
-
-            GridPane.setConstraints(getBandwidthButton(), 1, 0);
-            gridPane.getChildren().add(getBandwidthButton());
-
-            mDecoderPane.setContent(gridPane);
+            mDecoderPane.setDisable(true);
         }
 
         return mDecoderPane;
-    }
-
-    private TitledPane getEventLogPane()
-    {
-        if(mEventLogPane == null)
-        {
-            mEventLogPane = new TitledPane("Logging", getEventLogConfigurationEditor());
-            mEventLogPane.setExpanded(false);
-        }
-
-        return mEventLogPane;
-    }
-
-    private TitledPane getAuxDecoderPane()
-    {
-        if(mAuxDecoderPane == null)
-        {
-            mAuxDecoderPane = new TitledPane("Additional Decoders", getAuxDecoderConfigurationEditor());
-            mAuxDecoderPane.setExpanded(false);
-        }
-
-        return mAuxDecoderPane;
     }
 
     private TitledPane getRecordPane()
@@ -198,55 +147,6 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
         return mSourceConfigurationEditor;
     }
 
-    private EventLogConfigurationEditor getEventLogConfigurationEditor()
-    {
-        if(mEventLogConfigurationEditor == null)
-        {
-            List<EventLogType> types = new ArrayList<>();
-            types.add(EventLogType.CALL_EVENT);
-            types.add(EventLogType.DECODED_MESSAGE);
-
-            mEventLogConfigurationEditor = new EventLogConfigurationEditor(types);
-            mEventLogConfigurationEditor.setPadding(new Insets(5,5,5,5));
-            mEventLogConfigurationEditor.modifiedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
-        }
-
-        return mEventLogConfigurationEditor;
-    }
-
-    private AuxDecoderConfigurationEditor getAuxDecoderConfigurationEditor()
-    {
-        if(mAuxDecoderConfigurationEditor == null)
-        {
-            mAuxDecoderConfigurationEditor = new AuxDecoderConfigurationEditor(DecoderType.AUX_DECODERS);
-            mAuxDecoderConfigurationEditor.setPadding(new Insets(5,5,5,5));
-            mAuxDecoderConfigurationEditor.modifiedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
-        }
-
-        return mAuxDecoderConfigurationEditor;
-    }
-
-    private SegmentedButton getBandwidthButton()
-    {
-        if(mBandwidthButton == null)
-        {
-            mBandwidthButton = new SegmentedButton();
-            mBandwidthButton.setDisable(true);
-
-            for(DecodeConfigNBFM.Bandwidth bandwidth : DecodeConfigNBFM.Bandwidth.values())
-            {
-                ToggleButton toggleButton = new ToggleButton(bandwidth.toString());
-                toggleButton.setUserData(bandwidth);
-                mBandwidthButton.getButtons().add(toggleButton);
-            }
-
-            mBandwidthButton.getToggleGroup().selectedToggleProperty()
-                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
-        }
-
-        return mBandwidthButton;
-    }
-
     private ToggleSwitch getAudioRecordSwitch()
     {
         if(mAudioRecordSwitch == null)
@@ -277,47 +177,14 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     @Override
     protected void setDecoderConfiguration(DecodeConfiguration config)
     {
-        if(config instanceof DecodeConfigNBFM)
+        if(config instanceof DecodeConfigAM)
         {
-            getBandwidthButton().setDisable(false);
-            DecodeConfigNBFM decodeConfigNBFM = (DecodeConfigNBFM)config;
-            DecodeConfigNBFM.Bandwidth bandwidth = decodeConfigNBFM.getBandwidth();
-
-            if(bandwidth != null)
-            {
-                for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
-                {
-                    if(toggle.getUserData() == bandwidth)
-                    {
-                        toggle.setSelected(true);
-                        continue;
-                    }
-                }
-            }
-            else
-            {
-                for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
-                {
-                    if(toggle.getUserData() == DecodeConfigNBFM.Bandwidth.BW_12_5)
-                    {
-                        toggle.setSelected(true);
-                        continue;
-                    }
-                }
-            }
-
+            DecodeConfigAM decodeConfig = (DecodeConfigAM)config;
             getAudioRecordSwitch().setDisable(false);
-            getAudioRecordSwitch().selectedProperty().set(decodeConfigNBFM.getRecordAudio());
+            getAudioRecordSwitch().selectedProperty().set(decodeConfig.getRecordAudio());
         }
         else
         {
-            getBandwidthButton().setDisable(true);
-
-            for(Toggle toggle: getBandwidthButton().getToggleGroup().getToggles())
-            {
-                toggle.setSelected(false);
-            }
-
             getAudioRecordSwitch().setDisable(true);
             getAudioRecordSwitch().selectedProperty().set(false);
         }
@@ -326,71 +193,43 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
     @Override
     protected void saveDecoderConfiguration()
     {
-        DecodeConfigNBFM config;
+        DecodeConfigAM config;
 
-        if(getItem().getDecodeConfiguration() instanceof DecodeConfigNBFM)
+        if(getItem().getDecodeConfiguration() instanceof DecodeConfigAM)
         {
-            config = (DecodeConfigNBFM)getItem().getDecodeConfiguration();
+            config = (DecodeConfigAM)getItem().getDecodeConfiguration();
         }
         else
         {
-            config = new DecodeConfigNBFM();
+            config = new DecodeConfigAM();
         }
-
-        DecodeConfigNBFM.Bandwidth bandwidth = DecodeConfigNBFM.Bandwidth.BW_12_5;
-
-        if(getBandwidthButton().getToggleGroup().getSelectedToggle() != null)
-        {
-            bandwidth = (DecodeConfigNBFM.Bandwidth)getBandwidthButton().getToggleGroup().getSelectedToggle().getUserData();
-        }
-
-        config.setBandwidth(bandwidth);
 
         config.setRecordAudio(getAudioRecordSwitch().isSelected());
-
         getItem().setDecodeConfiguration(config);
     }
 
     @Override
     protected void setEventLogConfiguration(EventLogConfiguration config)
     {
-        getEventLogConfigurationEditor().setItem(config);
+        //no-op
     }
 
     @Override
     protected void saveEventLogConfiguration()
     {
-        getEventLogConfigurationEditor().save();
-
-        if(getEventLogConfigurationEditor().getItem().getLoggers().isEmpty())
-        {
-            getItem().setEventLogConfiguration(null);
-        }
-        else
-        {
-            getItem().setEventLogConfiguration(getEventLogConfigurationEditor().getItem());
-        }
+        //no-op
     }
 
     @Override
     protected void setAuxDecoderConfiguration(AuxDecodeConfiguration config)
     {
-        getAuxDecoderConfigurationEditor().setItem(config);
+        //no-op
     }
 
     @Override
     protected void saveAuxDecoderConfiguration()
     {
-        getAuxDecoderConfigurationEditor().save();
-
-        if(getAuxDecoderConfigurationEditor().getItem().getAuxDecoders().isEmpty())
-        {
-            getItem().setAuxDecodeConfiguration(null);
-        }
-        else
-        {
-            getItem().setAuxDecodeConfiguration(getAuxDecoderConfigurationEditor().getItem());
-        }
+        //no-op
     }
 
     @Override
@@ -420,6 +259,7 @@ public class NBFMConfigurationEditor extends ChannelConfigurationEditor
 
         getItem().setRecordConfiguration(config);
     }
+
 
     @Override
     protected void setSourceConfiguration(SourceConfiguration config)

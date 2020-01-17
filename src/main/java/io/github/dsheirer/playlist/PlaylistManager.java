@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -38,6 +38,7 @@ import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +63,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
     private BroadcastModel mBroadcastModel;
     private ChannelModel mChannelModel;
     private ChannelMapModel mChannelMapModel;
+    private TunerModel mTunerModel;
     private UserPreferences mUserPreferences;
     private ChannelProcessingManager mChannelProcessingManager;
     private AtomicBoolean mPlaylistSavePending = new AtomicBoolean();
@@ -78,13 +80,14 @@ public class PlaylistManager implements Listener<ChannelEvent>
      * @param channelModel
      */
     public PlaylistManager(AliasModel aliasModel, BroadcastModel broadcastModel, ChannelModel channelModel,
-                           ChannelMapModel channelMapModel, UserPreferences userPreferences,
+                           ChannelMapModel channelMapModel, TunerModel tunerModel, UserPreferences userPreferences,
                            ChannelProcessingManager channelProcessingManager)
     {
         mAliasModel = aliasModel;
         mBroadcastModel = broadcastModel;
         mChannelModel = channelModel;
         mChannelMapModel = channelMapModel;
+        mTunerModel = tunerModel;
         mUserPreferences = userPreferences;
         mChannelProcessingManager = channelProcessingManager;
 
@@ -152,6 +155,14 @@ public class PlaylistManager implements Listener<ChannelEvent>
     public AliasModel getAliasModel()
     {
         return mAliasModel;
+    }
+
+    /**
+     * Tuner model for this playlist manager
+     */
+    public TunerModel getTunerModel()
+    {
+        return mTunerModel;
     }
 
     /**

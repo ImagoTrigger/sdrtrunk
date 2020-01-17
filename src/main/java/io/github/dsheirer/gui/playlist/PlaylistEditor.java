@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ public class PlaylistEditor extends Application
         TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
         TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
         mPlaylistManager = new PlaylistManager(aliasModel, broadcastModel, new ChannelModel(), channelMapModel,
-            mUserPreferences, new ChannelProcessingManager(channelMapModel, new EventLogManager(mUserPreferences),
+            tunerModel, mUserPreferences, new ChannelProcessingManager(channelMapModel, new EventLogManager(mUserPreferences),
             new RecorderManager(aliasModel, mUserPreferences),
             new SourceManager(tunerModel, new SettingsManager(tunerConfigurationModel), mUserPreferences),
             aliasModel, mUserPreferences));

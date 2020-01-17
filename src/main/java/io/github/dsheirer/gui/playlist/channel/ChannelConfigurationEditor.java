@@ -23,22 +23,26 @@
 package io.github.dsheirer.gui.playlist.channel;
 
 import io.github.dsheirer.alias.AliasEvent;
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
+import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
+import io.github.dsheirer.source.tuner.TunerModel;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -55,6 +59,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Channel configuration editor
@@ -63,7 +68,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelConfigurationEditor.class);
 
-    private AliasModel mAliasModel;
+    private PlaylistManager mPlaylistManager;
     protected EditorModificationListener mEditorModificationListener = new EditorModificationListener();
     private AliasModelChangeListener mAliasModelChangeListener = new AliasModelChangeListener();
     private TextField mSystemField;
@@ -79,14 +84,14 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     private ToggleSwitch mAutoStartSwitch;
     private Spinner<Integer> mAutoStartOrderSpinner;
 
-    public ChannelConfigurationEditor(AliasModel aliasModel)
+    public ChannelConfigurationEditor(PlaylistManager playlistManager)
     {
         //TODO: broadcast a change event whenever we modify/save a channel config so the table can refresh
 
-        mAliasModel = aliasModel;
+        mPlaylistManager = playlistManager;
 
         //Listen for alias change events so we can update the alias list combo box
-        mAliasModel.addListener(mAliasModelChangeListener);
+        mPlaylistManager.getAliasModel().addListener(mAliasModelChangeListener);
 
         setMaxWidth(Double.MAX_VALUE);
 
@@ -95,7 +100,6 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         HBox.setHgrow(getTextFieldPane(), Priority.ALWAYS);
         HBox.setHgrow(getButtonBox(), Priority.NEVER);
         hbox.getChildren().addAll(getTextFieldPane(), getButtonBox());
-
         VBox.setVgrow(getTitledPanesScrollPane(), Priority.ALWAYS);
 
         getChildren().addAll(hbox, getTitledPanesScrollPane());
@@ -104,7 +108,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     @Override
     public void dispose()
     {
-        mAliasModel.removeListener(mAliasModelChangeListener);
+        mPlaylistManager.getAliasModel().removeListener(mAliasModelChangeListener);
     }
 
     public abstract DecoderType getDecoderType();
@@ -112,6 +116,22 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     @Override
     public void setItem(Channel channel)
     {
+        if(modifiedProperty().get())
+        {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.getButtonTypes().clear();
+            alert.getButtonTypes().addAll(ButtonType.NO, ButtonType.YES);
+            alert.setTitle("Save Changes");
+            alert.setHeaderText("Channel configuration has been modified");
+            alert.setContentText("Do you want to save these changes?");
+
+            Optional<ButtonType> result = alert.showAndWait();
+
+            if(result.get() == ButtonType.YES)
+            {
+                save();
+            }
+        }
         super.setItem(channel);
 
         if(channel != null)
@@ -141,15 +161,39 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
 
             getAutoStartSwitch().setDisable(false);
             getAutoStartSwitch().selectedProperty().set(channel.isAutoStart());
-            getAutoStartOrderSpinner().setDisable(false);
+            getAutoStartOrderSpinner().setDisable(!channel.isAutoStart());
             Integer order = channel.getAutoStartOrder();
             getAutoStartOrderSpinner().getValueFactory().setValue(order != null ? order : 0);
 
             setDecoderConfiguration(channel.getDecodeConfiguration());
-            setAuxDecoderConfiguration(channel.getAuxDecodeConfiguration());
-            setEventLogConfiguration(channel.getEventLogConfiguration());
-            setRecordConfiguration(channel.getRecordConfiguration());
-            setSourceConfiguration(channel.getSourceConfiguration());
+
+            SourceConfiguration sourceConfiguration = channel.getSourceConfiguration();
+            if(sourceConfiguration == null)
+            {
+                sourceConfiguration = new SourceConfigTuner();
+            }
+            setSourceConfiguration(sourceConfiguration);
+
+            AuxDecodeConfiguration auxDecodeConfiguration = channel.getAuxDecodeConfiguration();
+            if(auxDecodeConfiguration == null)
+            {
+                auxDecodeConfiguration = new AuxDecodeConfiguration();
+            }
+            setAuxDecoderConfiguration(auxDecodeConfiguration);
+
+            EventLogConfiguration eventLogConfiguration = channel.getEventLogConfiguration();
+            if(eventLogConfiguration == null)
+            {
+                eventLogConfiguration = new EventLogConfiguration();
+            }
+            setEventLogConfiguration(eventLogConfiguration);
+
+            RecordConfiguration recordConfiguration = channel.getRecordConfiguration();
+            if(recordConfiguration == null)
+            {
+                recordConfiguration = new RecordConfiguration();
+            }
+            setRecordConfiguration(recordConfiguration);
         }
         else
         {
@@ -176,6 +220,11 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         modifiedProperty().setValue(false);
     }
 
+    protected TunerModel getTunerModel()
+    {
+        return mPlaylistManager.getTunerModel();
+    }
+
     @Override
     public void save()
     {
@@ -186,7 +235,17 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             getItem().setName(getNameField().getText());
             getItem().setAliasListName(getAliasListComboBox().getSelectionModel().getSelectedItem());
             getItem().setAutoStart(getAutoStartSwitch().isSelected());
-            getItem().setAutoStartOrder(getAutoStartOrderSpinner().getValue());
+
+            Integer order = getAutoStartOrderSpinner().getValue();
+
+            if(order == null || order < 1)
+            {
+                getItem().setAutoStartOrder(null);
+            }
+            else
+            {
+                getItem().setAutoStartOrder(getAutoStartOrderSpinner().getValue());
+            }
 
             saveDecoderConfiguration();
             saveAuxDecoderConfiguration();
@@ -208,6 +267,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     protected abstract void saveRecordConfiguration();
     protected abstract void setSourceConfiguration(SourceConfiguration config);
     protected abstract void saveSourceConfiguration();
+
 
     private ToggleSwitch getAutoStartSwitch()
     {
@@ -384,7 +444,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mAliasListComboBox.setDisable(true);
             mAliasListComboBox.setEditable(true);
             mAliasListComboBox.setMaxWidth(Double.MAX_VALUE);
-            mAliasListComboBox.getItems().addAll(mAliasModel.getListNames());
+            mAliasListComboBox.getItems().addAll(mPlaylistManager.getAliasModel().getListNames());
             mAliasListComboBox.setOnAction(event -> modifiedProperty().set(true));
         }
 
@@ -459,7 +519,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
                 {
                     try
                     {
-                        List<String> aliasListNames = mAliasModel.getListNames();
+                        List<String> aliasListNames = mPlaylistManager.getAliasModel().getListNames();
 
                         String selected = getAliasListComboBox().getSelectionModel().getSelectedItem();
                         boolean modified = modifiedProperty().get();

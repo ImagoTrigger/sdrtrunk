@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -22,22 +22,49 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.playlist.PlaylistManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Provides access to channel configuration editors for various decoder types.
  */
 public class ChannelConfigurationEditorFactory
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ChannelConfigurationEditorFactory.class);
+    private static List<DecoderType> mLoggedUnrecognizedTypes = new ArrayList<>();
+
     /**
      * Constructs an editor for the specified decoder type
      * @param decoderType to create
-     * @param aliasModel for the editor
+     * @param playlistManager for the editor
      * @return constructed editor
      */
-    public static ChannelConfigurationEditor getEditor(DecoderType decoderType, AliasModel aliasModel)
+    public static ChannelConfigurationEditor getEditor(DecoderType decoderType, PlaylistManager playlistManager)
     {
-        return new NBFMConfigurationEditor(aliasModel);
+        switch(decoderType)
+        {
+            case AM:
+                return new AMConfigurationEditor(playlistManager);
+            case NBFM:
+                return new NBFMConfigurationEditor(playlistManager);
+            case LTR_NET:
+                return new LTRNetConfigurationEditor(playlistManager);
+            case LTR_STANDARD:
+                return new LTRConfigurationEditor(playlistManager);
+            case PASSPORT:
+                return new PassportConfigurationEditor(playlistManager);
+            default:
+                if(decoderType != null && !mLoggedUnrecognizedTypes.contains(decoderType))
+                {
+                    mLog.warn("Can't create channel configuration editor - unrecognized decoder type: " + decoderType);
+                    mLoggedUnrecognizedTypes.add(decoderType);
+                }
+                return null;
+        }
     }
 }

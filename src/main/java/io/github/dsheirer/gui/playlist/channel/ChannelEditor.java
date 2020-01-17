@@ -22,9 +22,8 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
-import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
-import io.github.dsheirer.controller.channel.ChannelModel;
+import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.beans.property.SimpleStringProperty;
@@ -48,13 +47,15 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * JavaFX editor for managing channel configurations.
  */
 public class ChannelEditor extends SplitPane
 {
-    private ChannelModel mChannelModel;
-    private AliasModel mAliasModel;
+    private PlaylistManager mPlaylistManager;
     private UserPreferences mUserPreferences;
     private TableView<Channel> mChannelTableView;
     private Label mPlaceholderLabel;
@@ -66,6 +67,8 @@ public class ChannelEditor extends SplitPane
     private HBox mSearchBox;
     private TextField mSearchField;
     private ChannelConfigurationEditor mChannelConfigurationEditor;
+    private UnknownConfigurationEditor mUnknownConfigurationEditor;
+    private Map<DecoderType,ChannelConfigurationEditor> mChannelConfigurationEditorMap = new HashMap();
 
     /**
      * Constructs an instance
@@ -74,9 +77,10 @@ public class ChannelEditor extends SplitPane
      */
     public ChannelEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
     {
-        mChannelModel = playlistManager.getChannelModel();
-        mAliasModel = playlistManager.getAliasModel();
+
+        mPlaylistManager = playlistManager;
         mUserPreferences = userPreferences;
+        mUnknownConfigurationEditor = new UnknownConfigurationEditor(mPlaylistManager);
 
         HBox channelsBox = new HBox();
         channelsBox.setPadding(new Insets(5, 5, 5, 5));
@@ -85,6 +89,7 @@ public class ChannelEditor extends SplitPane
         channelsBox.getChildren().addAll(getChannelTableView(), getButtonBox());
 
         VBox topBox = new VBox();
+        VBox.setVgrow(channelsBox, Priority.ALWAYS);
         topBox.getChildren().addAll(getSearchBox(), channelsBox);
 
         setOrientation(Orientation.VERTICAL);
@@ -93,11 +98,74 @@ public class ChannelEditor extends SplitPane
         //TODO: add a 'Features' column that has icons: enabled/running, auto-start, logging, or recording
     }
 
+    private void setChannel(Channel channel)
+    {
+        if(channel == null)
+        {
+            setChannelConfigurationEditor(mUnknownConfigurationEditor);
+        }
+        else
+        {
+            DecoderType channelDecoderType = null;
+
+            if(channel.getDecodeConfiguration() != null)
+            {
+                channelDecoderType = channel.getDecodeConfiguration().getDecoderType();
+            }
+
+            if(channelDecoderType == null)
+            {
+                setChannelConfigurationEditor(mUnknownConfigurationEditor);
+            }
+            else
+            {
+                DecoderType editorDecoderType = getChannelConfigurationEditor().getDecoderType();
+
+                if(editorDecoderType == null || editorDecoderType != channelDecoderType)
+                {
+                    ChannelConfigurationEditor editor = mChannelConfigurationEditorMap.get(channelDecoderType);
+
+                    if(editor == null)
+                    {
+                        editor = ChannelConfigurationEditorFactory.getEditor(channelDecoderType, mPlaylistManager);
+
+                        if(editor != null)
+                        {
+                            mChannelConfigurationEditorMap.put(channelDecoderType, editor);
+                        }
+                    }
+
+                    if(editor == null)
+                    {
+                        editor = mUnknownConfigurationEditor;
+                    }
+
+                    setChannelConfigurationEditor(editor);
+                }
+            }
+        }
+
+        getChannelConfigurationEditor().setItem(channel);
+    }
+
+    /**
+     * Sets the editor to be the current channel configuration editor
+     */
+    private void setChannelConfigurationEditor(ChannelConfigurationEditor editor)
+    {
+        if(editor != getChannelConfigurationEditor())
+        {
+            getItems().remove(getChannelConfigurationEditor());
+            mChannelConfigurationEditor = editor;
+            getItems().add(getChannelConfigurationEditor());
+        }
+    }
+
     private ChannelConfigurationEditor getChannelConfigurationEditor()
     {
         if(mChannelConfigurationEditor == null)
         {
-            mChannelConfigurationEditor = new NBFMConfigurationEditor(mAliasModel);
+            mChannelConfigurationEditor = mUnknownConfigurationEditor;
             mChannelConfigurationEditor.setMaxWidth(Double.MAX_VALUE);
         }
 
@@ -160,7 +228,8 @@ public class ChannelEditor extends SplitPane
             mChannelTableView.setPlaceholder(getPlaceholderLabel());
 
             //Sorting and filtering for the table
-            FilteredList<Channel> filteredList = new FilteredList<>(mChannelModel.channelList(), p -> true);
+            FilteredList<Channel> filteredList = new FilteredList<>(mPlaylistManager.getChannelModel().channelList(),
+                p -> true);
 
             getSearchField().textProperty().addListener(new ChangeListener<String>()
             {
@@ -208,7 +277,7 @@ public class ChannelEditor extends SplitPane
                 @Override
                 public void changed(ObservableValue<? extends Channel> observable, Channel oldValue, Channel newValue)
                 {
-                    getChannelConfigurationEditor().setItem(newValue);
+                    setChannel(newValue);
                 }
             });
         }
