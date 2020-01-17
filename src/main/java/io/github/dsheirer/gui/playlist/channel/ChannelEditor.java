@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -85,7 +85,6 @@ public class ChannelEditor extends SplitPane
         channelsBox.getChildren().addAll(getChannelTableView(), getButtonBox());
 
         VBox topBox = new VBox();
-        VBox.setVgrow(channelsBox, Priority.ALWAYS);
         topBox.getChildren().addAll(getSearchBox(), channelsBox);
 
         setOrientation(Orientation.VERTICAL);
@@ -99,6 +98,7 @@ public class ChannelEditor extends SplitPane
         if(mChannelConfigurationEditor == null)
         {
             mChannelConfigurationEditor = new NBFMConfigurationEditor(mAliasModel);
+            mChannelConfigurationEditor.setMaxWidth(Double.MAX_VALUE);
         }
 
         return mChannelConfigurationEditor;

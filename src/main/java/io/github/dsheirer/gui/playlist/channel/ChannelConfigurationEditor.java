@@ -27,6 +27,7 @@ import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.record.config.RecordConfiguration;
@@ -35,18 +36,20 @@ import io.github.dsheirer.source.config.SourceConfiguration;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,19 +74,31 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     private Button mSaveButton;
     private Button mResetButton;
     private VBox mButtonBox;
+    private ScrollPane mTitledPanesScrollPane;
+    private VBox mTitledPanesBox;
+    private ToggleSwitch mAutoStartSwitch;
+    private Spinner<Integer> mAutoStartOrderSpinner;
 
     public ChannelConfigurationEditor(AliasModel aliasModel)
     {
+        //TODO: broadcast a change event whenever we modify/save a channel config so the table can refresh
+
         mAliasModel = aliasModel;
 
         //Listen for alias change events so we can update the alias list combo box
         mAliasModel.addListener(mAliasModelChangeListener);
 
-        HBox textFieldsAndButtonsBox = new HBox();
-        HBox.setHgrow(textFieldsAndButtonsBox, Priority.ALWAYS);
+        setMaxWidth(Double.MAX_VALUE);
+
+        HBox hbox = new HBox();
+        hbox.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(getTextFieldPane(), Priority.ALWAYS);
         HBox.setHgrow(getButtonBox(), Priority.NEVER);
-        textFieldsAndButtonsBox.getChildren().addAll(getTextFieldPane(), getButtonBox());
-        getChildren().add(textFieldsAndButtonsBox);
+        hbox.getChildren().addAll(getTextFieldPane(), getButtonBox());
+
+        VBox.setVgrow(getTitledPanesScrollPane(), Priority.ALWAYS);
+
+        getChildren().addAll(hbox, getTitledPanesScrollPane());
     }
 
     @Override
@@ -99,26 +114,64 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     {
         super.setItem(channel);
 
-        getSystemField().setText(channel.getSystem());
-        getSiteField().setText(channel.getSite());
-        getNameField().setText(channel.getName());
-
-        String aliasListName = channel.getAliasListName();
-
-        if(aliasListName != null)
+        if(channel != null)
         {
-            if(!getAliasListComboBox().getItems().contains(aliasListName))
+            getSystemField().setDisable(false);
+            getSystemField().setText(channel.getSystem());
+            getSiteField().setDisable(false);
+            getSiteField().setText(channel.getSite());
+            getNameField().setDisable(false);
+            getNameField().setText(channel.getName());
+            getAliasListComboBox().setDisable(false);
+            String aliasListName = channel.getAliasListName();
+
+            if(aliasListName != null)
             {
-                getAliasListComboBox().getItems().add(aliasListName);
+                if(!getAliasListComboBox().getItems().contains(aliasListName))
+                {
+                    getAliasListComboBox().getItems().add(aliasListName);
+                }
+
+                getAliasListComboBox().getSelectionModel().select(aliasListName);
+            }
+            else
+            {
+                getAliasListComboBox().getSelectionModel().select(null);
             }
 
-            getAliasListComboBox().getSelectionModel().select(aliasListName);
-        }
+            getAutoStartSwitch().setDisable(false);
+            getAutoStartSwitch().selectedProperty().set(channel.isAutoStart());
+            getAutoStartOrderSpinner().setDisable(false);
+            Integer order = channel.getAutoStartOrder();
+            getAutoStartOrderSpinner().getValueFactory().setValue(order != null ? order : 0);
 
-        setDecoderConfiguration(channel.getDecodeConfiguration());
-        setEventLogConfiguration(channel.getEventLogConfiguration());
-        setRecordConfiguration(channel.getRecordConfiguration());
-        setSourceConfiguration(channel.getSourceConfiguration());
+            setDecoderConfiguration(channel.getDecodeConfiguration());
+            setAuxDecoderConfiguration(channel.getAuxDecodeConfiguration());
+            setEventLogConfiguration(channel.getEventLogConfiguration());
+            setRecordConfiguration(channel.getRecordConfiguration());
+            setSourceConfiguration(channel.getSourceConfiguration());
+        }
+        else
+        {
+            getSystemField().setDisable(true);
+            getSystemField().setText(null);
+            getSiteField().setDisable(true);
+            getSiteField().setText(null);
+            getNameField().setDisable(true);
+            getNameField().setText(null);
+            getAliasListComboBox().setDisable(true);
+            getAliasListComboBox().getSelectionModel().select(null);
+            getAutoStartSwitch().setDisable(true);
+            getAutoStartSwitch().selectedProperty().set(false);
+            getAutoStartOrderSpinner().setDisable(true);
+            getAutoStartOrderSpinner().getValueFactory().setValue(0);
+
+            setDecoderConfiguration(null);
+            setAuxDecoderConfiguration(null);
+            setEventLogConfiguration(null);
+            setRecordConfiguration(null);
+            setSourceConfiguration(null);
+        }
 
         modifiedProperty().setValue(false);
     }
@@ -128,8 +181,15 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     {
         if(modifiedProperty().get())
         {
-            //TODO: Save channel text fields to channel
+            getItem().setSystem(getSystemField().getText());
+            getItem().setSite(getSiteField().getText());
+            getItem().setName(getNameField().getText());
+            getItem().setAliasListName(getAliasListComboBox().getSelectionModel().getSelectedItem());
+            getItem().setAutoStart(getAutoStartSwitch().isSelected());
+            getItem().setAutoStartOrder(getAutoStartOrderSpinner().getValue());
+
             saveDecoderConfiguration();
+            saveAuxDecoderConfiguration();
             saveEventLogConfiguration();
             saveRecordConfiguration();
             saveSourceConfiguration();
@@ -138,6 +198,8 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         }
     }
 
+    protected abstract void setAuxDecoderConfiguration(AuxDecodeConfiguration config);
+    protected abstract void saveAuxDecoderConfiguration();
     protected abstract void setDecoderConfiguration(DecodeConfiguration config);
     protected abstract void saveDecoderConfiguration();
     protected abstract void setEventLogConfiguration(EventLogConfiguration config);
@@ -147,16 +209,77 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     protected abstract void setSourceConfiguration(SourceConfiguration config);
     protected abstract void saveSourceConfiguration();
 
+    private ToggleSwitch getAutoStartSwitch()
+    {
+        if(mAutoStartSwitch == null)
+        {
+            mAutoStartSwitch = new ToggleSwitch();
+            mAutoStartSwitch.setDisable(true);
+            mAutoStartSwitch.setDisable(true);
+            mAutoStartSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mAutoStartSwitch;
+    }
+
+    private Spinner<Integer> getAutoStartOrderSpinner()
+    {
+        if(mAutoStartOrderSpinner == null)
+        {
+            mAutoStartOrderSpinner = new Spinner();
+            mAutoStartOrderSpinner.setDisable(true);
+            getAutoStartSwitch().selectedProperty().addListener(new ChangeListener<Boolean>()
+            {
+                @Override
+                public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue)
+                {
+                    getAutoStartOrderSpinner().setDisable(!getAutoStartSwitch().selectedProperty().getValue());
+                }
+            });
+            SpinnerValueFactory svf = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 99);
+            mAutoStartOrderSpinner.setValueFactory(svf);
+            mAutoStartOrderSpinner.getStyleClass().add(Spinner.STYLE_CLASS_SPLIT_ARROWS_HORIZONTAL);
+            mAutoStartOrderSpinner.valueProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mAutoStartOrderSpinner;
+    }
+
+    protected VBox getTitledPanesBox()
+    {
+        if(mTitledPanesBox == null)
+        {
+            mTitledPanesBox = new VBox();
+            mTitledPanesBox.setMaxWidth(Double.MAX_VALUE);
+        }
+
+        return mTitledPanesBox;
+    }
+
+    private ScrollPane getTitledPanesScrollPane()
+    {
+        if(mTitledPanesScrollPane == null)
+        {
+            mTitledPanesScrollPane = new ScrollPane();
+            mTitledPanesScrollPane.setFitToWidth(true);
+            mTitledPanesScrollPane.setContent(getTitledPanesBox());
+        }
+
+        return mTitledPanesScrollPane;
+    }
+
+
+
     private GridPane getTextFieldPane()
     {
         if(mTextFieldPane == null)
         {
             mTextFieldPane = new GridPane();
-            mTextFieldPane.setPadding(new Insets(5, 5, 5,5));
-            mTextFieldPane.setVgap(5);
+            mTextFieldPane.setPadding(new Insets(10, 5, 10,10));
+            mTextFieldPane.setVgap(10);
             mTextFieldPane.setHgap(5);
 
-            Label systemLabel = new Label("System:");
+            Label systemLabel = new Label("System");
             GridPane.setHalignment(systemLabel, HPos.RIGHT);
             GridPane.setConstraints(systemLabel, 0, 0);
             mTextFieldPane.getChildren().add(systemLabel);
@@ -165,7 +288,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             GridPane.setHgrow(getSystemField(), Priority.ALWAYS);
             mTextFieldPane.getChildren().add(getSystemField());
 
-            Label siteLabel = new Label("Site:");
+            Label siteLabel = new Label("Site");
             GridPane.setHalignment(siteLabel, HPos.RIGHT);
             GridPane.setConstraints(siteLabel, 2, 0);
             mTextFieldPane.getChildren().add(siteLabel);
@@ -174,7 +297,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             GridPane.setHgrow(getSiteField(), Priority.ALWAYS);
             mTextFieldPane.getChildren().add(getSiteField());
 
-            Label nameLabel = new Label("Name:");
+            Label nameLabel = new Label("Name");
             GridPane.setHalignment(nameLabel, HPos.RIGHT);
             GridPane.setConstraints(nameLabel, 0, 1);
             mTextFieldPane.getChildren().add(nameLabel);
@@ -183,7 +306,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             GridPane.setHgrow(getNameField(), Priority.ALWAYS);
             mTextFieldPane.getChildren().add(getNameField());
 
-            Label aliasListLabel = new Label("Alias List:");
+            Label aliasListLabel = new Label("Alias List");
             GridPane.setHalignment(aliasListLabel, HPos.RIGHT);
             GridPane.setConstraints(aliasListLabel, 2, 1);
             mTextFieldPane.getChildren().add(aliasListLabel);
@@ -191,6 +314,24 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             GridPane.setConstraints(getAliasListComboBox(), 3, 1);
             GridPane.setHgrow(getAliasListComboBox(), Priority.ALWAYS);
             mTextFieldPane.getChildren().add(getAliasListComboBox());
+
+            Label autoStartLabel = new Label("Auto-Start");
+            GridPane.setHalignment(autoStartLabel, HPos.RIGHT);
+            GridPane.setConstraints(autoStartLabel, 0, 2);
+            mTextFieldPane.getChildren().add(autoStartLabel);
+
+            GridPane.setConstraints(getAutoStartSwitch(), 1, 2);
+            GridPane.setHalignment(getAutoStartSwitch(), HPos.LEFT);
+            mTextFieldPane.getChildren().add(getAutoStartSwitch());
+
+            Label autoStartOrderLabel = new Label("Auto-Start Order");
+            GridPane.setHalignment(autoStartOrderLabel, HPos.RIGHT);
+            GridPane.setConstraints(autoStartOrderLabel, 2, 2);
+            mTextFieldPane.getChildren().add(autoStartOrderLabel);
+
+            GridPane.setConstraints(getAutoStartOrderSpinner(), 3, 2);
+            GridPane.setHalignment(getAutoStartOrderSpinner(), HPos.LEFT);
+            mTextFieldPane.getChildren().add(getAutoStartOrderSpinner());
         }
 
         return mTextFieldPane;
@@ -201,6 +342,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         if(mSystemField == null)
         {
             mSystemField = new TextField();
+            mSystemField.setDisable(true);
             mSystemField.setMaxWidth(Double.MAX_VALUE);
             mSystemField.textProperty().addListener(mEditorModificationListener);
         }
@@ -213,6 +355,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         if(mSiteField == null)
         {
             mSiteField = new TextField();
+            mSiteField.setDisable(true);
             mSiteField.setMaxWidth(Double.MAX_VALUE);
             mSiteField.textProperty().addListener(mEditorModificationListener);
         }
@@ -225,6 +368,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         if(mNameField == null)
         {
             mNameField = new TextField();
+            mNameField.setDisable(true);
             mNameField.setMaxWidth(Double.MAX_VALUE);
             mNameField.textProperty().addListener(mEditorModificationListener);
         }
@@ -237,17 +381,11 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         if(mAliasListComboBox == null)
         {
             mAliasListComboBox = new ComboBox<>();
+            mAliasListComboBox.setDisable(true);
             mAliasListComboBox.setEditable(true);
             mAliasListComboBox.setMaxWidth(Double.MAX_VALUE);
             mAliasListComboBox.getItems().addAll(mAliasModel.getListNames());
-            mAliasListComboBox.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    modifiedProperty().set(true);
-                }
-            });
+            mAliasListComboBox.setOnAction(event -> modifiedProperty().set(true));
         }
 
         return mAliasListComboBox;
@@ -258,8 +396,8 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         if(mButtonBox == null)
         {
             mButtonBox = new VBox();
-            mButtonBox.setSpacing(5);
-            mButtonBox.setPadding(new Insets(5, 5, 5, 5));
+            mButtonBox.setSpacing(10);
+            mButtonBox.setPadding(new Insets(10, 10, 10, 5));
             mButtonBox.getChildren().addAll(getSaveButton(), getResetButton());
         }
 
@@ -270,9 +408,11 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     {
         if(mSaveButton == null)
         {
-            mSaveButton = new Button("Save");
+            mSaveButton = new Button("     Save     ");
             mSaveButton.setMaxWidth(Double.MAX_VALUE);
             mSaveButton.disableProperty().bind(modifiedProperty().not());
+            mSaveButton.setOnAction(event -> save());
+
         }
 
         return mSaveButton;
@@ -285,6 +425,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mResetButton = new Button("Reset");
             mResetButton.setMaxWidth(Double.MAX_VALUE);
             mResetButton.disableProperty().bind(modifiedProperty().not());
+            mResetButton.setOnAction(event -> setItem(getItem()));
         }
 
         return mResetButton;
