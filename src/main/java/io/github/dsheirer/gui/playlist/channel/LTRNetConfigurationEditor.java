@@ -25,7 +25,7 @@ package io.github.dsheirer.gui.playlist.channel;
 import io.github.dsheirer.gui.playlist.decoder.AuxDecoderConfigurationEditor;
 import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
 import io.github.dsheirer.gui.playlist.record.RecordConfigurationEditor;
-import io.github.dsheirer.gui.playlist.source.SingleFrequencyEditor;
+import io.github.dsheirer.gui.playlist.source.FrequencyEditor;
 import io.github.dsheirer.gui.playlist.source.SourceConfigurationEditor;
 import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -174,7 +174,7 @@ public class LTRNetConfigurationEditor extends ChannelConfigurationEditor
     {
         if(mSourceConfigurationEditor == null)
         {
-            mSourceConfigurationEditor = new SingleFrequencyEditor(getTunerModel());
+            mSourceConfigurationEditor = new FrequencyEditor(getTunerModel(), false);
 
             //Add a listener so that we can push change notifications up to this editor
             mSourceConfigurationEditor.modifiedProperty()

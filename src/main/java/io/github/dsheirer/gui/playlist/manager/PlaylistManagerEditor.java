@@ -35,6 +35,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -313,6 +314,7 @@ public class PlaylistManagerEditor extends HBox
                             {
                                 mLog.error("Error creating copy of playlist [" + selected.toString() + "] as [" + copyFile.toString() + "]", ioe);
                                 Alert alert = new Alert(Alert.AlertType.ERROR, "Unable to create copy of playlist", ButtonType.OK);
+                                alert.initOwner(((Node)getCopyButton()).getScene().getWindow());
                                 alert.show();
                             }
                         }
@@ -422,6 +424,7 @@ public class PlaylistManagerEditor extends HBox
                         Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Delete playlist from file system?",
                             ButtonType.YES, ButtonType.NO);
                         alert.setHeaderText("Are you sure?");
+                        alert.initOwner(((Node)getDeleteButton()).getScene().getWindow());
                         Button noButton = (Button)alert.getDialogPane().lookupButton(ButtonType.NO);
                         noButton.setDefaultButton(true);
                         Button yesButton = (Button)alert.getDialogPane().lookupButton(ButtonType.YES);

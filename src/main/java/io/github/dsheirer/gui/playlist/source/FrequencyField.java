@@ -34,7 +34,7 @@ import java.util.function.UnaryOperator;
 /**
  * Control for editing frequency values in MHz that allows access/setting value in Hz
  *
- * Allows values in range: 1.000000 to 9999.999999
+ * Allows values in range: 1.000000 to 9999.999999 MHz
  */
 public class FrequencyField extends TextField
 {
@@ -67,7 +67,7 @@ public class FrequencyField extends TextField
     }
 
     /**
-     * Sets the frequency to this control
+     * Sets the frequency for this control
      * @param frequency in range 0 <> 9,999,999,999 Hz</>
      */
     public void set(long frequency)
@@ -79,7 +79,7 @@ public class FrequencyField extends TextField
 
         if(frequency == 0)
         {
-            setText(null);
+            setText("");
         }
         else
         {
@@ -95,14 +95,17 @@ public class FrequencyField extends TextField
     {
         String raw = getText();
 
-        try
+        if(raw != null)
         {
-            double mhz = Double.parseDouble(raw);
-            return (long)(mhz * CONVERT_MHZ_TO_HZ);
-        }
-        catch(Exception e)
-        {
-            mLog.error("Error parsing frequency MHz from [" + raw + "]");
+            try
+            {
+                double mhz = Double.parseDouble(raw);
+                return (long)(mhz * CONVERT_MHZ_TO_HZ);
+            }
+            catch(Exception e)
+            {
+                //Ignore ... we'll return 0 for this value
+            }
         }
 
         return 0;

@@ -76,6 +76,9 @@ public class PlaylistEditor extends Application
         mJavaFxWindowManager = manager;
     }
 
+    /**
+     * Test constructor - do not use!!
+     */
     public PlaylistEditor()
     {
         mUserPreferences = new UserPreferences();
@@ -93,7 +96,7 @@ public class PlaylistEditor extends Application
 
         mPlaylistManager.init();
 
-        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences);
+        mJavaFxWindowManager = new JavaFxWindowManager(mUserPreferences, channelMapModel);
     }
 
     @Override

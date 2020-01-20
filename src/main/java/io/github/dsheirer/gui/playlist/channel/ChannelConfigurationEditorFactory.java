@@ -56,6 +56,8 @@ public class ChannelConfigurationEditorFactory
                 return new LTRNetConfigurationEditor(playlistManager);
             case LTR_STANDARD:
                 return new LTRConfigurationEditor(playlistManager);
+            case MPT1327:
+                return new MPT1327ConfigurationEditor(playlistManager);
             case PASSPORT:
                 return new PassportConfigurationEditor(playlistManager);
             default:

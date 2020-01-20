@@ -40,6 +40,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -105,6 +106,14 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         getChildren().addAll(hbox, getTitledPanesScrollPane());
     }
 
+    /**
+     * Provides subclass access to the playlist manager and related components
+     */
+    protected PlaylistManager getPlaylistManager()
+    {
+        return mPlaylistManager;
+    }
+
     @Override
     public void dispose()
     {
@@ -124,6 +133,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             alert.setTitle("Save Changes");
             alert.setHeaderText("Channel configuration has been modified");
             alert.setContentText("Do you want to save these changes?");
+            alert.initOwner(((Node)getButtonBox()).getScene().getWindow());
 
             Optional<ButtonType> result = alert.showAndWait();
 
@@ -132,6 +142,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
                 save();
             }
         }
+
         super.setItem(channel);
 
         if(channel != null)
@@ -485,7 +496,10 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mResetButton = new Button("Reset");
             mResetButton.setMaxWidth(Double.MAX_VALUE);
             mResetButton.disableProperty().bind(modifiedProperty().not());
-            mResetButton.setOnAction(event -> setItem(getItem()));
+            mResetButton.setOnAction(event -> {
+                modifiedProperty().set(false);
+                setItem(getItem());
+            });
         }
 
         return mResetButton;

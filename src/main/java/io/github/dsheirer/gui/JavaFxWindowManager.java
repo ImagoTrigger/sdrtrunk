@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,10 @@
 package io.github.dsheirer.gui;
 
 import com.google.common.eventbus.Subscribe;
+import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.eventbus.MyEventBus;
+import io.github.dsheirer.gui.channelMap.ChannelMapEditor;
+import io.github.dsheirer.gui.channelMap.ChannelMapEditorViewRequest;
 import io.github.dsheirer.gui.preference.PreferenceEditorViewRequest;
 import io.github.dsheirer.gui.preference.PreferencesEditor;
 import io.github.dsheirer.gui.radioreference.LoginDialog;
@@ -45,12 +48,15 @@ public class JavaFxWindowManager
 
     private JFXPanel mJFXPanel;
     private UserPreferences mUserPreferences;
+    private ChannelMapModel mChannelMapModel;
     private PreferencesEditor mPreferencesEditor;
     private LoginDialog mLoginDialog;
+    private ChannelMapEditor mChannelMapEditor;
 
-    public JavaFxWindowManager(UserPreferences userPreferences)
+    public JavaFxWindowManager(UserPreferences userPreferences, ChannelMapModel channelMapModel)
     {
         mUserPreferences = userPreferences;
+        mChannelMapModel = channelMapModel;
 
         //Register this class to receive events via each method annotated with @Subscribe
         MyEventBus.getEventBus().register(this);
@@ -139,6 +145,38 @@ public class JavaFxWindowManager
                 catch(Throwable e)
                 {
                     mLog.error("Error launching user preferences window", e);
+                }
+            });
+        }
+    }
+
+    @Subscribe
+    public void process(final ChannelMapEditorViewRequest request)
+    {
+        if(mChannelMapEditor != null)
+        {
+            mChannelMapEditor.show(request.getChannelMapName());
+        }
+        else
+        {
+            createJFXPanel();
+            Platform.setImplicitExit(false);
+            Platform.runLater(() -> {
+                try
+                {
+                    mChannelMapEditor = new ChannelMapEditor(mChannelMapModel);
+                    Stage stage = new Stage();
+                    mChannelMapEditor.start(stage);
+
+                    if(request.hasChannelMapName())
+                    {
+                        System.out.println("Requesting show channel map: " + request.getChannelMapName());
+                        mChannelMapEditor.show(request.getChannelMapName());
+                    }
+                }
+                catch(Throwable e)
+                {
+                    mLog.error("Error launching channel map editor window", e);
                 }
             });
         }

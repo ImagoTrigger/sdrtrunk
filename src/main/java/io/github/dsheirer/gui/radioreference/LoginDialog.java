@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -317,6 +318,7 @@ public class LoginDialog extends Application
                         Alert alert = new Alert(Alert.AlertType.ERROR, "Please provide a user name", ButtonType.OK);
                         alert.setHeaderText("Invalid User Name");
                         alert.setTitle("Login Credentials Required");
+                        alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
                         alert.showAndWait();
                         getTestConnectionButton().setDisable(false);
                         return;
@@ -327,6 +329,7 @@ public class LoginDialog extends Application
                         Alert alert = new Alert(Alert.AlertType.ERROR, "Please provide a password", ButtonType.OK);
                         alert.setHeaderText("Invalid Password");
                         alert.setTitle("Login Credentials Required");
+                        alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
                         alert.showAndWait();
                         getTestConnectionButton().setDisable(false);
                         return;
@@ -350,6 +353,7 @@ public class LoginDialog extends Application
                                     Alert alert = new Alert(Alert.AlertType.ERROR, "Please check network or radio reference availability", ButtonType.OK);
                                     alert.setHeaderText("No Network Connection");
                                     alert.setTitle("Test Failed");
+                                    alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
                                     alert.showAndWait();
                                     mLog.error("No network connection to radioreference.com");
                                 }
@@ -362,6 +366,7 @@ public class LoginDialog extends Application
                                         Alert alert = new Alert(Alert.AlertType.ERROR, "Please verify username and password", ButtonType.OK);
                                         alert.setHeaderText("Login Failed");
                                         alert.setTitle("Test Failed");
+                                        alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
                                         alert.showAndWait();
                                         mLog.error("Login failed. Invalid username or password.  Can't login to radioreference.com");
                                     }
@@ -370,6 +375,7 @@ public class LoginDialog extends Application
                                         Alert alert = new Alert(Alert.AlertType.ERROR, fault.getFaultString(), ButtonType.OK);
                                         alert.setHeaderText(fault.getFaultCode());
                                         alert.setTitle("Test Failed");
+                                        alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
                                         alert.showAndWait();
                                         mLog.error("Test failed.  Fault [" + fault.toString() + "] Can't login to radioreference.com");
                                     }
@@ -379,6 +385,7 @@ public class LoginDialog extends Application
                                     Alert alert = new Alert(Alert.AlertType.ERROR, "Error: " + rre.getMessage(), ButtonType.OK);
                                     alert.setHeaderText("Unknown Error");
                                     alert.setTitle("Test Failed");
+                                    alert.initOwner(((Node)getTestConnectionButton()).getScene().getWindow());
                                     alert.showAndWait();
                                     mLog.error("Error testing connection to radioreference.com", rre);
                                 }

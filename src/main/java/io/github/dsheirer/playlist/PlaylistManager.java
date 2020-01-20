@@ -158,6 +158,14 @@ public class PlaylistManager implements Listener<ChannelEvent>
     }
 
     /**
+     * Channel Map model managed by this playlist manager
+     */
+    public ChannelMapModel getChannelMapModel()
+    {
+        return mChannelMapModel;
+    }
+
+    /**
      * Tuner model for this playlist manager
      */
     public TunerModel getTunerModel()

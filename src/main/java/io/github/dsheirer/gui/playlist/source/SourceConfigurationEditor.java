@@ -45,6 +45,11 @@ public abstract class SourceConfigurationEditor<T extends SourceConfiguration> e
     }
 
     /**
+     * Disable (true) or enable (false) the controls on this editor
+     */
+    public abstract void disable(boolean disable);
+
+    /**
      * Saves the (modified) contents in the editor.  If the editor is not modified, this is a no-op.
      */
     public abstract void save();
@@ -56,6 +61,7 @@ public abstract class SourceConfigurationEditor<T extends SourceConfiguration> e
     public void setSourceConfiguration(T sourceConfiguration)
     {
         mSourceConfiguration = sourceConfiguration;
+        disable(mSourceConfiguration == null);
     }
 
     /**
@@ -66,4 +72,5 @@ public abstract class SourceConfigurationEditor<T extends SourceConfiguration> e
     {
         return mSourceConfiguration;
     }
+
 }
