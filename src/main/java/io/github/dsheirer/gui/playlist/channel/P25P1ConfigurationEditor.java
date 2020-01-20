@@ -22,9 +22,6 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
-import io.github.dsheirer.controller.channel.map.ChannelMap;
-import io.github.dsheirer.eventbus.MyEventBus;
-import io.github.dsheirer.gui.channelMap.ChannelMapEditorViewRequest;
 import io.github.dsheirer.gui.playlist.eventlog.EventLogConfigurationEditor;
 import io.github.dsheirer.gui.playlist.record.RecordConfigurationEditor;
 import io.github.dsheirer.gui.playlist.source.FrequencyEditor;
@@ -32,28 +29,23 @@ import io.github.dsheirer.gui.playlist.source.SourceConfigurationEditor;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.AuxDecodeConfiguration;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
-import io.github.dsheirer.module.decode.mpt1327.DecodeConfigMPT1327;
+import io.github.dsheirer.module.decode.p25.phase1.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.log.EventLogType;
 import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.source.config.SourceConfiguration;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
-import javafx.geometry.VPos;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TitledPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import org.controlsfx.control.ToggleSwitch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,11 +53,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * MPT-1327 channel configuration editor
+ * P25 Phase 1 channel configuration editor
  */
-public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
+public class P25P1ConfigurationEditor extends ChannelConfigurationEditor
 {
-    private final static Logger mLog = LoggerFactory.getLogger(MPT1327ConfigurationEditor.class);
+    private final static Logger mLog = LoggerFactory.getLogger(P25P1ConfigurationEditor.class);
     private TitledPane mDecoderPane;
     private TitledPane mEventLogPane;
     private TitledPane mRecordPane;
@@ -73,16 +65,14 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
     private SourceConfigurationEditor mSourceConfigurationEditor;
     private EventLogConfigurationEditor mEventLogConfigurationEditor;
     private RecordConfigurationEditor mRecordConfigurationEditor;
-    private ComboBox<ChannelMap> mChannelMapComboBox;
-    private Button mChannelMapEditButton;
+    private ToggleSwitch mIgnoreDataCallsButton;
     private Spinner<Integer> mTrafficChannelPoolSizeSpinner;
-    private Spinner<Integer> mCallTimeoutSpinner;
 
     /**
      * Constructs an instance
      * @param playlistManager
      */
-    public MPT1327ConfigurationEditor(PlaylistManager playlistManager)
+    public P25P1ConfigurationEditor(PlaylistManager playlistManager)
     {
         super(playlistManager);
         getTitledPanesBox().getChildren().add(getSourcePane());
@@ -94,7 +84,7 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
     @Override
     public DecoderType getDecoderType()
     {
-        return DecoderType.MPT1327;
+        return DecoderType.P25_PHASE1;
     }
 
     private TitledPane getSourcePane()
@@ -113,7 +103,7 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
         if(mDecoderPane == null)
         {
             mDecoderPane = new TitledPane();
-            mDecoderPane.setText("Decoder: MPT-1327");
+            mDecoderPane.setText("Decoder: P25 Phase 1");
             mDecoderPane.setExpanded(true);
 
             GridPane gridPane = new GridPane();
@@ -121,33 +111,21 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
             gridPane.setHgap(10);
             gridPane.setVgap(10);
 
-            Label channelMapLabel = new Label("Channel Map");
-            GridPane.setHalignment(channelMapLabel, HPos.RIGHT);
-            GridPane.setConstraints(channelMapLabel, 0, 0);
-            gridPane.getChildren().add(channelMapLabel);
-
-            GridPane.setConstraints(getChannelMapComboBox(), 1, 0, 2, 1,
-                HPos.LEFT, VPos.CENTER, Priority.ALWAYS, Priority.SOMETIMES);
-            gridPane.getChildren().add(getChannelMapComboBox());
-
-            GridPane.setConstraints(getChannelMapEditButton(), 3, 0);
-            gridPane.getChildren().add(getChannelMapEditButton());
-
             Label poolSizeLabel = new Label("Max Traffic Channels");
             GridPane.setHalignment(poolSizeLabel, HPos.RIGHT);
-            GridPane.setConstraints(poolSizeLabel, 0, 1);
+            GridPane.setConstraints(poolSizeLabel, 0, 0);
             gridPane.getChildren().add(poolSizeLabel);
 
-            GridPane.setConstraints(getTrafficChannelPoolSizeSpinner(), 1, 1);
+            GridPane.setConstraints(getTrafficChannelPoolSizeSpinner(), 1, 0);
             gridPane.getChildren().add(getTrafficChannelPoolSizeSpinner());
 
-            Label callTimeoutLabel = new Label("Call Timeout Seconds");
-            GridPane.setHalignment(callTimeoutLabel, HPos.RIGHT);
-            GridPane.setConstraints(callTimeoutLabel, 2, 1);
-            gridPane.getChildren().add(callTimeoutLabel);
+            GridPane.setConstraints(getIgnoreDataCallsButton(), 2, 0);
+            gridPane.getChildren().add(getIgnoreDataCallsButton());
 
-            GridPane.setConstraints(getCallTimeoutSpinner(), 3, 1);
-            gridPane.getChildren().add(getCallTimeoutSpinner());
+            Label directionLabel = new Label("Ignore Data Calls");
+            GridPane.setHalignment(directionLabel, HPos.LEFT);
+            GridPane.setConstraints(directionLabel, 3, 0);
+            gridPane.getChildren().add(directionLabel);
 
             mDecoderPane.setContent(gridPane);
         }
@@ -218,65 +196,17 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
         return mEventLogConfigurationEditor;
     }
 
-    private RecordConfigurationEditor getRecordConfigurationEditor()
+    private ToggleSwitch getIgnoreDataCallsButton()
     {
-        if(mRecordConfigurationEditor == null)
+        if(mIgnoreDataCallsButton == null)
         {
-            List<RecorderType> types = new ArrayList<>();
-            types.add(RecorderType.BASEBAND);
-            types.add(RecorderType.DEMODULATED_BIT_STREAM);
-            types.add(RecorderType.TRAFFIC_BASEBAND);
-            types.add(RecorderType.TRAFFIC_DEMODULATED_BIT_STREAM);
-            mRecordConfigurationEditor = new RecordConfigurationEditor(types);
-            mRecordConfigurationEditor.setDisable(true);
-            mRecordConfigurationEditor.modifiedProperty()
+            mIgnoreDataCallsButton = new ToggleSwitch();
+            mIgnoreDataCallsButton.setDisable(true);
+            mIgnoreDataCallsButton.selectedProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
-        return mRecordConfigurationEditor;
-    }
-
-    private ComboBox<ChannelMap> getChannelMapComboBox()
-    {
-        if(mChannelMapComboBox == null)
-        {
-            mChannelMapComboBox = new ComboBox<>();
-            mChannelMapComboBox.setMaxWidth(Double.MAX_VALUE);
-            mChannelMapComboBox.setDisable(true);
-            mChannelMapComboBox.setTooltip(new Tooltip("Select a channel map to use for this system"));
-            mChannelMapComboBox.getItems().addAll(getPlaylistManager().getChannelMapModel().getChannelMaps());
-            mChannelMapComboBox.setDisable(true);
-            mChannelMapComboBox.getSelectionModel().selectedItemProperty()
-                .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
-        }
-
-        return mChannelMapComboBox;
-    }
-
-    private Button getChannelMapEditButton()
-    {
-        if(mChannelMapEditButton == null)
-        {
-            mChannelMapEditButton = new Button("Channel Map Editor");
-            mChannelMapEditButton.setTooltip(new Tooltip("Open the channel map editor to add/edit maps"));
-            mChannelMapEditButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    String channelMapName = null;
-
-                    if(getChannelMapComboBox().getSelectionModel().getSelectedItem() != null)
-                    {
-                        channelMapName = getChannelMapComboBox().getSelectionModel().getSelectedItem().getName();
-                    }
-
-                    MyEventBus.getEventBus().post(new ChannelMapEditorViewRequest(channelMapName));
-                }
-            });
-        }
-
-        return mChannelMapEditButton;
+        return mIgnoreDataCallsButton;
     }
 
     private Spinner<Integer> getTrafficChannelPoolSizeSpinner()
@@ -297,90 +227,61 @@ public class MPT1327ConfigurationEditor extends ChannelConfigurationEditor
         return mTrafficChannelPoolSizeSpinner;
     }
 
-    private Spinner<Integer> getCallTimeoutSpinner()
+    private RecordConfigurationEditor getRecordConfigurationEditor()
     {
-        if(mCallTimeoutSpinner == null)
+        if(mRecordConfigurationEditor == null)
         {
-            mCallTimeoutSpinner = new Spinner();
-            mCallTimeoutSpinner.setDisable(true);
-            mCallTimeoutSpinner.setTooltip(new Tooltip("Maximum call limit in seconds"));
-            mCallTimeoutSpinner.getStyleClass().add(Spinner.STYLE_CLASS_SPLIT_ARROWS_HORIZONTAL);
-            SpinnerValueFactory<Integer> svf = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 120);
-            mCallTimeoutSpinner.setValueFactory(svf);
-            mCallTimeoutSpinner.getValueFactory().valueProperty()
+            List<RecorderType> types = new ArrayList<>();
+            types.add(RecorderType.BASEBAND);
+            types.add(RecorderType.DEMODULATED_BIT_STREAM);
+            types.add(RecorderType.MBE_CALL_SEQUENCE);
+            types.add(RecorderType.TRAFFIC_BASEBAND);
+            types.add(RecorderType.TRAFFIC_DEMODULATED_BIT_STREAM);
+            types.add(RecorderType.TRAFFIC_MBE_CALL_SEQUENCE);
+            mRecordConfigurationEditor = new RecordConfigurationEditor(types);
+            mRecordConfigurationEditor.setDisable(true);
+            mRecordConfigurationEditor.modifiedProperty()
                 .addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
         }
 
-        return mCallTimeoutSpinner;
+        return mRecordConfigurationEditor;
     }
 
     @Override
     protected void setDecoderConfiguration(DecodeConfiguration config)
     {
-        getChannelMapComboBox().setDisable(config == null);
-        getCallTimeoutSpinner().setDisable(config == null);
+        getIgnoreDataCallsButton().setDisable(config == null);
         getTrafficChannelPoolSizeSpinner().setDisable(config == null);
 
-        getChannelMapComboBox().getSelectionModel().select(null);
-
-        if(config instanceof DecodeConfigMPT1327)
+        if(config instanceof DecodeConfigP25Phase1)
         {
-            DecodeConfigMPT1327 decodeConfigMPT1327 = (DecodeConfigMPT1327)config;
-
-            String channelMapName = decodeConfigMPT1327.getChannelMapName();
-
-            if(channelMapName != null)
-            {
-                for(ChannelMap channelMap: getChannelMapComboBox().getItems())
-                {
-                    if(channelMap.getName().contentEquals(channelMapName))
-                    {
-                        getChannelMapComboBox().getSelectionModel().select(channelMap);
-                    }
-                }
-            }
-
-            int callTimeout = decodeConfigMPT1327.getCallTimeout();
-            getCallTimeoutSpinner().getValueFactory().setValue(callTimeout);
-
-            int channelPoolSize = decodeConfigMPT1327.getTrafficChannelPoolSize();
-            getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(channelPoolSize);
+            DecodeConfigP25Phase1 decodeConfig = (DecodeConfigP25Phase1)config;
+            getIgnoreDataCallsButton().setSelected(decodeConfig.getIgnoreDataCalls());
+            getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(decodeConfig.getTrafficChannelPoolSize());
         }
-        else if(config != null)
+        else
         {
-            getCallTimeoutSpinner().getValueFactory().setValue(DecodeConfigMPT1327.DEFAULT_CALL_TIMEOUT_DELAY_SECONDS);
-            getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(DecodeConfigMPT1327.TRAFFIC_CHANNEL_LIMIT_DEFAULT);
+            getIgnoreDataCallsButton().setSelected(false);
+            getTrafficChannelPoolSizeSpinner().getValueFactory().setValue(0);
         }
     }
 
     @Override
     protected void saveDecoderConfiguration()
     {
-        DecodeConfigMPT1327 config;
+        DecodeConfigP25Phase1 config;
 
-        if(getItem().getDecodeConfiguration() instanceof DecodeConfigMPT1327)
+        if(getItem().getDecodeConfiguration() instanceof DecodeConfigP25Phase1)
         {
-            config = (DecodeConfigMPT1327)getItem().getDecodeConfiguration();
+            config = (DecodeConfigP25Phase1)getItem().getDecodeConfiguration();
         }
         else
         {
-            config = new DecodeConfigMPT1327();
+            config = new DecodeConfigP25Phase1();
         }
 
-        config.setCallTimeout(getCallTimeoutSpinner().getValue());
+        config.setIgnoreDataCalls(getIgnoreDataCallsButton().isSelected());
         config.setTrafficChannelPoolSize(getTrafficChannelPoolSizeSpinner().getValue());
-
-        ChannelMap selected = getChannelMapComboBox().getSelectionModel().getSelectedItem();
-
-        if(selected != null)
-        {
-            config.setChannelMapName(selected.getName());
-        }
-        else
-        {
-            config.setChannelMapName(null);
-        }
-
         getItem().setDecodeConfiguration(config);
     }
 

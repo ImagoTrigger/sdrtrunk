@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -56,8 +56,8 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
         "Source", "Decoder", "Auto-Start"};
     private static final String VALUE_YES = "Yes";
 
-    private ObservableList<Channel> mChannels = FXCollections.observableArrayList();
-    private ObservableList<Channel> mTrafficChannels = FXCollections.observableArrayList();
+    private ObservableList<Channel> mChannels = FXCollections.observableArrayList(Channel.extractor());
+    private ObservableList<Channel> mTrafficChannels = FXCollections.observableArrayList(Channel.extractor());
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster();
 
     public ChannelModel()

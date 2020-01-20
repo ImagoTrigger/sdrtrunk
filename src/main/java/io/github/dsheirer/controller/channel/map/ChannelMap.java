@@ -170,7 +170,7 @@ public class ChannelMap
 
 
     /**
-     * Creates an observable property extractor for use with obserable lists to detect changes internal to this object.
+     * Creates an observable property extractor for use with observable lists to detect changes internal to this object.
      */
     public static Callback<ChannelMap,Observable[]> extractor()
     {
