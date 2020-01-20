@@ -62,6 +62,8 @@ public class ChannelConfigurationEditorFactory
                 return new PassportConfigurationEditor(playlistManager);
             case P25_PHASE1:
                 return new P25P1ConfigurationEditor(playlistManager);
+            case P25_PHASE2:
+                return new P25P2ConfigurationEditor(playlistManager);
             default:
                 if(decoderType != null && !mLoggedUnrecognizedTypes.contains(decoderType))
                 {
