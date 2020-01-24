@@ -75,9 +75,9 @@ public class Channel extends Configuration implements Listener<SourceEvent>
     private RecordConfiguration mRecordConfiguration = new RecordConfiguration();
 
     private StringProperty mAliasListName = new SimpleStringProperty();
-    private StringProperty mSystem = new SimpleStringProperty("System");
-    private StringProperty mSite = new SimpleStringProperty("Site");
-    private StringProperty mName = new SimpleStringProperty("Channel");
+    private StringProperty mSystem = new SimpleStringProperty();
+    private StringProperty mSite = new SimpleStringProperty();
+    private StringProperty mName = new SimpleStringProperty();
 
     private BooleanProperty mProcessing = new SimpleBooleanProperty();
     private BooleanProperty mAutoStart = new SimpleBooleanProperty();
@@ -135,34 +135,43 @@ public class Channel extends Configuration implements Listener<SourceEvent>
         channel.setAutoStart(mAutoStart.get());
         channel.setAutoStartOrder(mAutoStartOrder.get());
 
-        AuxDecodeConfiguration aux = new AuxDecodeConfiguration();
+        AuxDecodeConfiguration auxCopy = new AuxDecodeConfiguration();
 
-        for(DecoderType auxType : aux.getAuxDecoders())
+        if(getAuxDecodeConfiguration() != null)
         {
-            aux.addAuxDecoder(auxType);
+            for(DecoderType auxType : getAuxDecodeConfiguration().getAuxDecoders())
+            {
+                auxCopy.addAuxDecoder(auxType);
+            }
         }
 
-        channel.setAuxDecodeConfiguration(aux);
+        channel.setAuxDecodeConfiguration(auxCopy);
 
         channel.setDecodeConfiguration(DecoderFactory.copy(mDecodeConfiguration));
 
-        EventLogConfiguration log = new EventLogConfiguration();
+        EventLogConfiguration logCopy = new EventLogConfiguration();
 
-        for(EventLogType logType : mEventLogConfiguration.getLoggers())
+        if(mEventLogConfiguration != null)
         {
-            log.addLogger(logType);
+            for(EventLogType logType : mEventLogConfiguration.getLoggers())
+            {
+                logCopy.addLogger(logType);
+            }
         }
 
-        channel.setEventLogConfiguration(log);
+        channel.setEventLogConfiguration(logCopy);
 
-        RecordConfiguration record = new RecordConfiguration();
+        RecordConfiguration recordCopy = new RecordConfiguration();
 
-        for(RecorderType recordType : mRecordConfiguration.getRecorders())
+        if(mRecordConfiguration != null)
         {
-            record.addRecorder(recordType);
+            for(RecorderType recordType : mRecordConfiguration.getRecorders())
+            {
+                recordCopy.addRecorder(recordType);
+            }
         }
 
-        channel.setRecordConfiguration(record);
+        channel.setRecordConfiguration(recordCopy);
 
         channel.setSourceConfiguration(SourceConfigFactory.copy(mSourceConfiguration));
 

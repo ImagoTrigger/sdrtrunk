@@ -23,7 +23,6 @@ package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.controller.channel.ChannelEvent.Event;
-import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import javafx.collections.FXCollections;
@@ -124,7 +123,7 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
     /**
      * Returns a list of unique system values from across the channel set
      */
-    public List<String> getSystems()
+    public List<String> getSystemNames()
     {
         List<String> systems = new ArrayList<>();
 
@@ -443,9 +442,44 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
         throw new IllegalArgumentException("Not yet implemented");
     }
 
-    public void createChannel(DecoderType decoderType, long frequency)
+    /**
+     * List of site names from all channels in the model
+     */
+    public List<String> getSiteNames()
     {
-        throw new UnsupportedOperationException("Not yet implemented");
+        List<String> sites = new ArrayList<>();
+
+        for(Channel channel: mChannels)
+        {
+            String site = channel.getSite();
+
+            if(site != null && !site.isEmpty() && !sites.contains(site))
+            {
+                sites.add(site);
+            }
+        }
+
+        return sites;
+    }
+
+    /**
+     * List of alias list names from all channels in the model
+     */
+    public List<String> getAliasListNames()
+    {
+        List<String> aliasLists = new ArrayList<>();
+
+        for(Channel channel: mChannels)
+        {
+            String aliasList = channel.getAliasListName();
+
+            if(aliasList != null && !aliasList.isEmpty() && !aliasLists.contains(aliasList))
+            {
+                aliasLists.add(aliasList);
+            }
+        }
+
+        return aliasLists;
     }
 
     /**
@@ -458,13 +492,30 @@ public class ChannelModel extends AbstractTableModel implements Listener<Channel
         {
             while(change.next())
             {
-                for(Channel channel: change.getAddedSubList())
+                if(change.wasAdded())
                 {
-                    mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_ADD));
+                    for(Channel channel: change.getAddedSubList())
+                    {
+                        mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_ADD));
+                    }
                 }
-                for(Channel channel: change.getRemoved())
+                else if(change.wasRemoved())
                 {
-                    mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_DELETE));
+                    for(Channel channel: change.getRemoved())
+                    {
+                        mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_DELETE));
+                    }
+                }
+                else if(change.wasUpdated())
+                {
+                    for(Channel channel: change.getList())
+                    {
+                        mChannelEventBroadcaster.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_CONFIGURATION_CHANGE));
+                    }
+                }
+                else if (change.wasPermutated())
+                {
+                    System.out.println("Channel Model - Permutation change detected !!!!!");
                 }
             }
         }

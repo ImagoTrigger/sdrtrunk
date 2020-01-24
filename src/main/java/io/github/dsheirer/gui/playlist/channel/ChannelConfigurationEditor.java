@@ -22,6 +22,8 @@
 
 package io.github.dsheirer.gui.playlist.channel;
 
+import impl.org.controlsfx.autocompletion.AutoCompletionTextFieldBinding;
+import impl.org.controlsfx.autocompletion.SuggestionProvider;
 import io.github.dsheirer.alias.AliasEvent;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.gui.playlist.Editor;
@@ -40,10 +42,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -60,7 +59,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Channel configuration editor
@@ -84,11 +82,11 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     private VBox mTitledPanesBox;
     private ToggleSwitch mAutoStartSwitch;
     private Spinner<Integer> mAutoStartOrderSpinner;
+    private SuggestionProvider<String> mSystemSuggestionProvider;
+    private SuggestionProvider<String> mSiteSuggestionProvider;
 
     public ChannelConfigurationEditor(PlaylistManager playlistManager)
     {
-        //TODO: broadcast a change event whenever we modify/save a channel config so the table can refresh
-
         mPlaylistManager = playlistManager;
 
         //Listen for alias change events so we can update the alias list combo box
@@ -125,25 +123,9 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
     @Override
     public void setItem(Channel channel)
     {
-        if(modifiedProperty().get())
-        {
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.getButtonTypes().clear();
-            alert.getButtonTypes().addAll(ButtonType.NO, ButtonType.YES);
-            alert.setTitle("Save Changes");
-            alert.setHeaderText("Channel configuration has been modified");
-            alert.setContentText("Do you want to save these changes?");
-            alert.initOwner(((Node)getButtonBox()).getScene().getWindow());
-
-            Optional<ButtonType> result = alert.showAndWait();
-
-            if(result.get() == ButtonType.YES)
-            {
-                save();
-            }
-        }
-
         super.setItem(channel);
+
+        refreshAutoCompleteBindings();
 
         if(channel != null)
         {
@@ -408,6 +390,17 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
         return mTextFieldPane;
     }
 
+    /**
+     * Refreshes the system and site text field auto-completion lists.
+     */
+    private void refreshAutoCompleteBindings()
+    {
+        getSystemSuggestionProvider().clearSuggestions();
+        getSystemSuggestionProvider().addPossibleSuggestions(mPlaylistManager.getChannelModel().getSystemNames());
+        getSiteSuggestionProvider().clearSuggestions();
+        getSiteSuggestionProvider().addPossibleSuggestions(mPlaylistManager.getChannelModel().getSiteNames());
+    }
+
     protected TextField getSystemField()
     {
         if(mSystemField == null)
@@ -416,9 +409,30 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mSystemField.setDisable(true);
             mSystemField.setMaxWidth(Double.MAX_VALUE);
             mSystemField.textProperty().addListener(mEditorModificationListener);
+            new AutoCompletionTextFieldBinding<>(mSystemField, getSystemSuggestionProvider());
         }
 
         return mSystemField;
+    }
+
+    private SuggestionProvider<String> getSystemSuggestionProvider()
+    {
+        if(mSystemSuggestionProvider == null)
+        {
+            mSystemSuggestionProvider = SuggestionProvider.create(mPlaylistManager.getChannelModel().getSystemNames());
+        }
+
+        return mSystemSuggestionProvider;
+    }
+
+    private SuggestionProvider<String> getSiteSuggestionProvider()
+    {
+        if(mSiteSuggestionProvider == null)
+        {
+            mSiteSuggestionProvider = SuggestionProvider.create(mPlaylistManager.getChannelModel().getSiteNames());
+        }
+
+        return mSiteSuggestionProvider;
     }
 
     protected TextField getSiteField()
@@ -429,6 +443,7 @@ public abstract class ChannelConfigurationEditor extends Editor<Channel>
             mSiteField.setDisable(true);
             mSiteField.setMaxWidth(Double.MAX_VALUE);
             mSiteField.textProperty().addListener(mEditorModificationListener);
+            new AutoCompletionTextFieldBinding<>(mSiteField, getSiteSuggestionProvider());
         }
 
         return mSiteField;

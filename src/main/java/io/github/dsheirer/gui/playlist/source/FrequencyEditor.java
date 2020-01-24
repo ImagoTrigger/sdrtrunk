@@ -116,6 +116,13 @@ public class FrequencyEditor extends SourceConfigurationEditor<SourceConfigurati
     public void save()
     {
         String preferredTuner = getPreferredTunerComboBox().getSelectionModel().getSelectedItem();
+
+        //Remove the preferred tuner value if it contains the default 'none' value
+        if(preferredTuner != null && preferredTuner.contentEquals(NONE))
+        {
+            preferredTuner = null;
+        }
+
         List<Long> frequencies = getFrequencies();
 
         if(frequencies.size() <= 1)

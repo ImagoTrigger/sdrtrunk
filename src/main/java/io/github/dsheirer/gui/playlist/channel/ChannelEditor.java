@@ -23,20 +23,28 @@
 package io.github.dsheirer.gui.playlist.channel;
 
 import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.UserPreferences;
+import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -46,9 +54,11 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.util.Callback;
+import org.controlsfx.control.textfield.TextFields;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * JavaFX editor for managing channel configurations.
@@ -59,10 +69,9 @@ public class ChannelEditor extends SplitPane
     private UserPreferences mUserPreferences;
     private TableView<Channel> mChannelTableView;
     private Label mPlaceholderLabel;
-    private MenuButton mAddButton;
+    private MenuButton mNewButton;
     private Button mDeleteButton;
-    private Button mCopyButton;
-    private MenuButton mCopyAsButton;
+    private Button mCloneButton;
     private VBox mButtonBox;
     private HBox mSearchBox;
     private TextField mSearchField;
@@ -100,6 +109,34 @@ public class ChannelEditor extends SplitPane
 
     private void setChannel(Channel channel)
     {
+        //Prompt the user to save if the contents of the current channel editor have been modified
+        if(getChannelConfigurationEditor().modifiedProperty().get())
+        {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.getButtonTypes().clear();
+            alert.getButtonTypes().addAll(ButtonType.NO, ButtonType.YES);
+            alert.setTitle("Save Changes");
+            alert.setHeaderText("Channel configuration has been modified");
+            alert.setContentText("Do you want to save these changes?");
+            alert.initOwner(((Node)getButtonBox()).getScene().getWindow());
+
+            //Workaround for JavaFX KDE on Linux bug in FX 10/11: https://bugs.openjdk.java.net/browse/JDK-8179073
+            alert.setResizable(true);
+            alert.onShownProperty().addListener(e -> {
+                Platform.runLater(() -> alert.setResizable(false));
+            });
+
+            Optional<ButtonType> result = alert.showAndWait();
+
+            if(result.get() == ButtonType.YES)
+            {
+                getChannelConfigurationEditor().save();
+            }
+        }
+
+        getCloneButton().setDisable(channel == null);
+        getDeleteButton().setDisable(channel == null);
+
         if(channel == null)
         {
             setChannelConfigurationEditor(mUnknownConfigurationEditor);
@@ -148,6 +185,14 @@ public class ChannelEditor extends SplitPane
         getChannelConfigurationEditor().setItem(channel);
     }
 
+    private void createNewChannel(DecoderType decoderType)
+    {
+        Channel channel = new Channel();
+        channel.setDecodeConfiguration(DecoderFactory.getDecodeConfiguration(decoderType));
+        mPlaylistManager.getChannelModel().addChannel(channel);
+        getChannelTableView().getSelectionModel().select(channel);
+    }
+
     /**
      * Sets the editor to be the current channel configuration editor
      */
@@ -192,7 +237,8 @@ public class ChannelEditor extends SplitPane
     {
         if(mSearchField == null)
         {
-            mSearchField = new TextField();
+            mSearchField = TextFields.createClearableTextField();
+
         }
 
         return mSearchField;
@@ -302,24 +348,27 @@ public class ChannelEditor extends SplitPane
             mButtonBox = new VBox();
             mButtonBox.setPadding(new Insets(0, 5, 5, 5));
             mButtonBox.setSpacing(10);
-            mButtonBox.getChildren().addAll(getAddButton(), getDeleteButton(), getCopyButton(), getCopyAsButton());
+            mButtonBox.getChildren().addAll(getNewButton(), getCloneButton(), getDeleteButton());
         }
 
         return mButtonBox;
     }
 
-    private MenuButton getAddButton()
+    private MenuButton getNewButton()
     {
-        if(mAddButton == null)
+        if(mNewButton == null)
         {
-            mAddButton = new MenuButton("Add");
-            mAddButton.setAlignment(Pos.CENTER);
-            mAddButton.setMaxWidth(Double.MAX_VALUE);
+            mNewButton = new MenuButton("New");
+            mNewButton.setAlignment(Pos.CENTER);
+            mNewButton.setMaxWidth(Double.MAX_VALUE);
 
-            //TODO: this button should be a menu that allows user to select the protocol type
+            for(DecoderType decoderType: DecoderType.PRIMARY_DECODERS)
+            {
+                mNewButton.getItems().add(new NewChannelMenuItem(decoderType));
+            }
         }
 
-        return mAddButton;
+        return mNewButton;
     }
 
     private Button getDeleteButton()
@@ -327,33 +376,61 @@ public class ChannelEditor extends SplitPane
         if(mDeleteButton == null)
         {
             mDeleteButton = new Button("Delete");
+            mDeleteButton.setDisable(true);
             mDeleteButton.setMaxWidth(Double.MAX_VALUE);
+            mDeleteButton.setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    Channel selected = getChannelTableView().getSelectionModel().getSelectedItem();
+
+                    if(selected != null)
+                    {
+                        mPlaylistManager.getChannelModel().removeChannel(selected);
+                    }
+                }
+            });
         }
 
         return mDeleteButton;
     }
 
-    private Button getCopyButton()
+    private Button getCloneButton()
     {
-        if(mCopyButton == null)
+        if(mCloneButton == null)
         {
-            mCopyButton = new Button("Copy");
-            mCopyButton.setMaxWidth(Double.MAX_VALUE);
+            mCloneButton = new Button("Clone");
+            mCloneButton.setDisable(true);
+            mCloneButton.setMaxWidth(Double.MAX_VALUE);
+            mCloneButton.setOnAction(event -> {
+                Channel selected = getChannelTableView().getSelectionModel().getSelectedItem();
+                Channel copy = selected.copyOf();
+                mPlaylistManager.getChannelModel().addChannel(copy);
+                getChannelTableView().getSelectionModel().select(copy);
+            });
         }
 
-        return mCopyButton;
+        return mCloneButton;
     }
 
-    private MenuButton getCopyAsButton()
+    /**
+     * Menu item for creating a new channel for a specific decoder type
+     */
+    public class NewChannelMenuItem extends MenuItem
     {
-        if(mCopyAsButton == null)
-        {
-            mCopyAsButton = new MenuButton("Copy As");
-            mCopyAsButton.setAlignment(Pos.CENTER);
-            mCopyAsButton.setMaxWidth(Double.MAX_VALUE);
-        }
+        private DecoderType mDecoderType;
 
-        return mCopyAsButton;
+        /**
+         * Constructs an instance
+         * @param decoderType to use for the decoder configuration for the channel.
+         */
+        public NewChannelMenuItem(DecoderType decoderType)
+        {
+            setText(decoderType.getDisplayString());
+            mDecoderType = decoderType;
+            setOnAction(event -> createNewChannel(mDecoderType));
+        }
     }
 
     public class ProtocolCellValueFactory implements Callback<TableColumn.CellDataFeatures<Channel, String>,
