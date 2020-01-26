@@ -25,11 +25,12 @@ package io.github.dsheirer.gui.playlist.alias;
 import impl.org.controlsfx.autocompletion.AutoCompletionTextFieldBinding;
 import impl.org.controlsfx.autocompletion.SuggestionProvider;
 import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
+import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.gui.playlist.Editor;
 import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ListChangeListener;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -50,6 +51,9 @@ import jiconfont.icons.font_awesome.FontAwesome;
 import jiconfont.javafx.IconFontFX;
 import jiconfont.javafx.IconNode;
 import org.controlsfx.control.ToggleSwitch;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * Editor for configuring aliases
@@ -74,7 +78,7 @@ public class AliasConfigurationEditor extends Editor<Alias>
     private TitledPane mStreamPane;
     private TitledPane mActionPane;
     private ListView<String> mAvailableStreamsView;
-    private ListView<BroadcastConfiguration> mSelectedStreamsView;
+    private ListView<BroadcastChannel> mSelectedStreamsView;
     private Button mAddStreamButton;
     private Button mAddAllStreamsButton;
     private Button mRemoveStreamButton;
@@ -114,6 +118,8 @@ public class AliasConfigurationEditor extends Editor<Alias>
         getNameField().setDisable(alias == null);
         getRecordToggleSwitch().setDisable(alias == null);
         getColorPicker().setDisable(alias == null);
+
+        updateStreamViews();
 
         if(alias != null)
         {
@@ -207,6 +213,8 @@ public class AliasConfigurationEditor extends Editor<Alias>
 
             HBox hbox = new HBox();
             hbox.setSpacing(10);
+            HBox.setHgrow(availableBox, Priority.ALWAYS);
+            HBox.setHgrow(selectedBox, Priority.ALWAYS);
             hbox.getChildren().addAll(availableBox, buttonBox, selectedBox);
 
             mStreamPane = new TitledPane("Streaming", hbox);
@@ -214,6 +222,30 @@ public class AliasConfigurationEditor extends Editor<Alias>
         }
 
         return mStreamPane;
+    }
+
+    private void updateStreamViews()
+    {
+        getAvailableStreamsView().getItems().clear();
+        getSelectedStreamsView().getItems().clear();
+
+        if(getItem() != null)
+        {
+            List<String> availableStreams = mPlaylistManager.getBroadcastModel().getBroadcastConfigurationNames();
+
+            Set<BroadcastChannel> selectedChannels = getItem().getBroadcastChannels();
+
+            for(BroadcastChannel channel: selectedChannels)
+            {
+                if(availableStreams.contains(channel.getChannelName()))
+                {
+                    availableStreams.remove(channel.getChannelName());
+                }
+            }
+
+            getSelectedStreamsView().getItems().addAll(selectedChannels);
+            getAvailableStreamsView().getItems().addAll(availableStreams);
+        }
     }
 
     private ListView<String> getAvailableStreamsView()
@@ -227,12 +259,22 @@ public class AliasConfigurationEditor extends Editor<Alias>
         return mAvailableStreamsView;
     }
 
-    private ListView<BroadcastConfiguration> getSelectedStreamsView()
+    private ListView<BroadcastChannel> getSelectedStreamsView()
     {
         if(mSelectedStreamsView == null)
         {
             mSelectedStreamsView = new ListView<>();
             mSelectedStreamsView.setPrefHeight(50);
+            mSelectedStreamsView.getItems().addListener((ListChangeListener<BroadcastChannel>)c -> {
+                String title = "Streaming";
+
+                if(getSelectedStreamsView().getItems().size() > 0)
+                {
+                    title += " (" + getSelectedStreamsView().getItems().size() + ")";
+                }
+
+                getStreamPane().setText(title);
+            });
         }
 
         return mSelectedStreamsView;

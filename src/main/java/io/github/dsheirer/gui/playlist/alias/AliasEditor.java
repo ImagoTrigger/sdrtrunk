@@ -337,7 +337,6 @@ public class AliasEditor extends SplitPane
 
     public class ColorizedCell implements Callback<TableColumn<Alias,Integer>,TableCell<Alias,Integer>>
     {
-
         @Override
         public TableCell<Alias,Integer> call(TableColumn<Alias,Integer> param)
         {
@@ -355,8 +354,16 @@ public class AliasEditor extends SplitPane
                     if(!empty && getTableRow() != null)
                     {
                         Alias alias = getTableRow().getItem();
-                        rectangle.setVisible(true);
-                        rectangle.setFill(ColorUtil.fromInteger(alias.getColor()));
+
+                        if(alias != null)
+                        {
+                            rectangle.setVisible(true);
+                            rectangle.setFill(ColorUtil.fromInteger(alias.getColor()));
+                        }
+                        else
+                        {
+                            rectangle.setVisible(false);
+                        }
                     }
                     else
                     {
