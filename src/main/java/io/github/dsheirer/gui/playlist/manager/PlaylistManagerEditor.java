@@ -73,7 +73,7 @@ public class PlaylistManagerEditor extends HBox
     private UserPreferences mUserPreferences;
     private ListView<Path> mPlaylistPathView;
     private VBox mButtonBox;
-    private Button mLoadButton;
+    private Button mSelectButton;
     private Button mAddButton;
     private Button mRemoveButton;
     private Button mCopyButton;
@@ -153,7 +153,7 @@ public class PlaylistManagerEditor extends HBox
         boolean itemSelected = (selected != null);
         boolean isCurrent = isCurrent(selected);
 
-        getLoadButton().setDisable(!itemSelected || isCurrent);
+        getSelectButton().setDisable(!itemSelected || isCurrent);
         getRemoveButton().setDisable(!itemSelected || isCurrent);
         getCopyButton().setDisable(!itemSelected || (selected != null && !selected.toFile().exists()));
         getDeleteButton().setDisable(!itemSelected || isCurrent || (selected != null && !selected.toFile().exists()));
@@ -167,7 +167,7 @@ public class PlaylistManagerEditor extends HBox
             mButtonBox.setSpacing(10.0);
             mButtonBox.setPadding(new Insets(5, 5, 5, 10));
             mButtonBox.setAlignment(Pos.TOP_CENTER);
-            mButtonBox.getChildren().add(getLoadButton());
+            mButtonBox.getChildren().add(getSelectButton());
             mButtonBox.getChildren().add(new Separator());
             mButtonBox.getChildren().addAll(getNewButton(), getAddButton(), getRemoveButton(), getCopyButton());
             mButtonBox.getChildren().add(new Separator());
@@ -177,13 +177,13 @@ public class PlaylistManagerEditor extends HBox
         return mButtonBox;
     }
 
-    private Button getLoadButton()
+    private Button getSelectButton()
     {
-        if(mLoadButton == null)
+        if(mSelectButton == null)
         {
-            mLoadButton = new Button("Load");
-            mLoadButton.setMaxWidth(Double.MAX_VALUE);
-            mLoadButton.setOnAction(new EventHandler<ActionEvent>()
+            mSelectButton = new Button("Select");
+            mSelectButton.setMaxWidth(Double.MAX_VALUE);
+            mSelectButton.setOnAction(new EventHandler<ActionEvent>()
             {
                 @Override
                 public void handle(ActionEvent event)
@@ -219,7 +219,7 @@ public class PlaylistManagerEditor extends HBox
             });
         }
 
-        return mLoadButton;
+        return mSelectButton;
     }
 
     private Button getAddButton()
@@ -487,7 +487,7 @@ public class PlaylistManagerEditor extends HBox
             {
                 if(isCurrent(item))
                 {
-                    setText(item.toString() + " (CURRENT)");
+                    setText(item.toString() + " (SELECTED)");
                 }
                 else if(!item.toFile().exists())
                 {

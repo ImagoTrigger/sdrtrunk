@@ -26,7 +26,6 @@ import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.playlist.PlaylistManager;
-import io.github.dsheirer.preference.UserPreferences;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
@@ -66,7 +65,6 @@ import java.util.Optional;
 public class ChannelEditor extends SplitPane
 {
     private PlaylistManager mPlaylistManager;
-    private UserPreferences mUserPreferences;
     private TableView<Channel> mChannelTableView;
     private Label mPlaceholderLabel;
     private MenuButton mNewButton;
@@ -82,13 +80,11 @@ public class ChannelEditor extends SplitPane
     /**
      * Constructs an instance
      * @param playlistManager containing playlists and channel configurations
-     * @param userPreferences for accessing preferences
      */
-    public ChannelEditor(PlaylistManager playlistManager, UserPreferences userPreferences)
+    public ChannelEditor(PlaylistManager playlistManager)
     {
 
         mPlaylistManager = playlistManager;
-        mUserPreferences = userPreferences;
         mUnknownConfigurationEditor = new UnknownConfigurationEditor(mPlaylistManager);
 
         HBox channelsBox = new HBox();

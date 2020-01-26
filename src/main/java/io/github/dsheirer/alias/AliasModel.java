@@ -1,7 +1,7 @@
 /*
  *
  *  * ******************************************************************************
- *  * Copyright (C) 2014-2019 Dennis Sheirer
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
  *  *
  *  * This program is free software: you can redistribute it and/or modify
  *  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@ import io.github.dsheirer.identifier.IdentifierCollection;
 import io.github.dsheirer.identifier.configuration.AliasListConfigurationIdentifier;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
@@ -33,7 +35,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Alias Model contains all aliases and is responsible for creation and management of alias lists.  Alias lists are a
@@ -50,12 +51,17 @@ public class AliasModel extends AbstractTableModel
     public static final int COLUMN_ICON = 3;
     public static final int COLUMN_COLOR = 4;
 
-    private List<Alias> mAliases = new CopyOnWriteArrayList<>();
+    private ObservableList<Alias> mAliases = FXCollections.observableArrayList(Alias.extractor());
     private Broadcaster<AliasEvent> mAliasEventBroadcaster = new Broadcaster<>();
     private Map<String,AliasList> mAliasListMap = new HashMap<>();
 
     public AliasModel()
     {
+    }
+
+    public ObservableList<Alias> aliasList()
+    {
+        return mAliases;
     }
 
     /**
@@ -141,7 +147,7 @@ public class AliasModel extends AbstractTableModel
 
         for(Alias alias : mAliases)
         {
-            if(alias.hasList() && alias.getList().equalsIgnoreCase(name))
+            if(alias.hasList() && alias.getAliasListName().equalsIgnoreCase(name))
             {
                 aliasList.addAlias(alias);
             }
@@ -164,9 +170,9 @@ public class AliasModel extends AbstractTableModel
 
         for(Alias alias : mAliases)
         {
-            if(alias.hasList() && !listNames.contains(alias.getList()))
+            if(alias.hasList() && !listNames.contains(alias.getAliasListName()))
             {
-                listNames.add(alias.getList());
+                listNames.add(alias.getAliasListName());
             }
         }
 
@@ -209,7 +215,7 @@ public class AliasModel extends AbstractTableModel
             {
                 if(alias.hasList() &&
                     alias.hasGroup() &&
-                    listName.equals(alias.getList()) &&
+                    listName.equals(alias.getAliasListName()) &&
                     !groupNames.contains(alias.getGroup()))
                 {
                     groupNames.add(alias.getGroup());
@@ -241,13 +247,9 @@ public class AliasModel extends AbstractTableModel
         if(alias != null)
         {
             mAliases.add(alias);
-
             int index = mAliases.size() - 1;
-
             fireTableRowsInserted(index, index);
-
             broadcast(new AliasEvent(alias, AliasEvent.Event.ADD));
-
             return index;
         }
 
@@ -356,7 +358,7 @@ public class AliasModel extends AbstractTableModel
         switch(columnIndex)
         {
             case COLUMN_LIST:
-                return alias.getList();
+                return alias.getAliasListName();
             case COLUMN_GROUP:
                 return alias.getGroup();
             case COLUMN_NAME:
