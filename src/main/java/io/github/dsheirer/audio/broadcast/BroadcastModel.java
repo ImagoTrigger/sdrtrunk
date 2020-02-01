@@ -31,6 +31,8 @@ import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.util.ThreadPool;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +72,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     public static final String[] COLUMN_NAMES = new String[]
         {"Streaming", "Name", "Status", "Queued", "Streamed", "Aged Off"};
 
-    private List<BroadcastConfiguration> mBroadcastConfigurations = new CopyOnWriteArrayList<>();
+    private ObservableList<BroadcastConfiguration> mBroadcastConfigurations =
+            FXCollections.observableArrayList(BroadcastConfiguration.extractor());
     private List<AudioRecording> mRecordingQueue = new CopyOnWriteArrayList<>();
 
     private Map<String,BroadcastConfiguration> mBroadcastConfigurationMap = new HashMap<>();
@@ -127,7 +130,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Reusa
     /**
      * Current list of broadcastAudio configurations
      */
-    public List<BroadcastConfiguration> getBroadcastConfigurations()
+    public ObservableList<BroadcastConfiguration> getBroadcastConfigurations()
     {
         return mBroadcastConfigurations;
     }

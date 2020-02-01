@@ -428,7 +428,14 @@ public class Channel extends Configuration implements Listener<SourceEvent>
      */
     public void setAutoStartOrder(Integer order)
     {
-        mAutoStartOrder.set(order);
+        if(order != null)
+        {
+            mAutoStartOrder.set(order);
+        }
+        else
+        {
+            mAutoStartOrder.setValue(null);
+        }
     }
 
     /**

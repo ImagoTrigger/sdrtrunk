@@ -32,6 +32,7 @@ import io.github.dsheirer.gui.playlist.alias.AliasEditor;
 import io.github.dsheirer.gui.playlist.channel.ChannelEditor;
 import io.github.dsheirer.gui.playlist.manager.PlaylistManagerEditor;
 import io.github.dsheirer.gui.playlist.radioreference.RadioReferenceEditor;
+import io.github.dsheirer.gui.playlist.streaming.StreamingEditor;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
@@ -202,7 +203,8 @@ public class PlaylistEditor extends Application
     {
         if(mStreamingTab == null)
         {
-            mStreamingTab = new Tab("Audio Streaming");
+            mStreamingTab = new Tab("Streaming");
+            mStreamingTab.setContent(new StreamingEditor(mPlaylistManager));
         }
 
         return mStreamingTab;
