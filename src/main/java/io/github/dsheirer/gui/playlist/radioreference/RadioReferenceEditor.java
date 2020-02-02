@@ -88,8 +88,8 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
     public static final String COUNTY_LABEL = "County:";
 
     private UserPreferences mUserPreferences;
-    private JavaFxWindowManager mJavaFxWindowManager;
     private RadioReference mRadioReference;
+    private JavaFxWindowManager mJavaFxWindowManager;
     private HBox mTopBox;
     private HBox mCredentialsBox;
     private TextField mUserNameText;
@@ -116,10 +116,10 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
     private FrequencyTableView mFrequencyTableView;
     private TrunkedSystemView mTrunkedSystemView;
 
-    public RadioReferenceEditor(UserPreferences userPreferences, JavaFxWindowManager manager)
+    public RadioReferenceEditor(UserPreferences userPreferences, RadioReference radioReference, JavaFxWindowManager manager)
     {
         mUserPreferences = userPreferences;
-        mRadioReference = new RadioReference(userPreferences);
+        mRadioReference = radioReference;
         mJavaFxWindowManager = manager;
 
         IconFontFX.register(jiconfont.icons.font_awesome.FontAwesome.getIconFont());
@@ -145,14 +145,12 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
                         UserInfo userInfo = mRadioReference.getService().getUserInfo();
                         getUserNameText().setText(userInfo.getUserName());
                         getAccountExpiresText().setText(userInfo.getExpirationDate());
-                        getTestFailIcon().setVisible(false);
-                        getTestPassIcon().setVisible(true);
+                        mRadioReference.loggedOnProperty().set(true);
                     }
                     catch(RadioReferenceException rre)
                     {
                         getAccountExpiresText().setText(null);
-                        getTestFailIcon().setVisible(true);
-                        getTestPassIcon().setVisible(false);
+                        mRadioReference.loggedOnProperty().set(false);
                     }
                 }
             });
@@ -183,7 +181,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
                     }
                     catch(RadioReferenceException rre)
                     {
-                        mLog.error("Error refreshing flavors, modes, types and tags lookup maps", rre);
+                        mLog.error("Error refreshing flavors, modes, types and tags lookup maps");
                     }
                 }
             });
@@ -317,7 +315,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
                     }
                     catch(RadioReferenceException rre)
                     {
-                        mLog.error("Error retrieving country info for " + country.getName(), rre);
+                        mLog.error("Error retrieving country info for " + country.getName());
                     }
                 }
             });
@@ -641,9 +639,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
             mCredentialsBox.getChildren().add(getUserNameText());
             mCredentialsBox.getChildren().add(new Label("Expires:"));
             mCredentialsBox.getChildren().add(getAccountExpiresText());
-
             mCredentialsBox.getChildren().add(getTestFailIcon());
-            getTestPassIcon().setVisible(false);
             mCredentialsBox.getChildren().add(getTestPassIcon());
             mCredentialsBox.getChildren().add(getLoginButton());
         }
@@ -679,6 +675,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         {
             mTestPassIcon = new IconNode(FontAwesome.CHECK);
             mTestPassIcon.setFill(Color.GREEN);
+            mTestPassIcon.visibleProperty().bind(mRadioReference.loggedOnProperty());
         }
 
         return mTestPassIcon;
@@ -690,6 +687,7 @@ public class RadioReferenceEditor extends BorderPane implements Listener<Authori
         {
             mTestFailIcon = new IconNode(FontAwesome.TIMES);
             mTestFailIcon.setFill(Color.RED);
+            mTestFailIcon.visibleProperty().bind(mRadioReference.loggedOnProperty().not());
         }
 
         return mTestFailIcon;

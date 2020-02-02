@@ -308,7 +308,18 @@ public class AliasEditor extends SplitPane
 
                     if(selected != null)
                     {
-                        mPlaylistManager.getAliasModel().removeAlias(selected);
+                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                            "Do you want to delete the selected alias?", ButtonType.NO, ButtonType.YES);
+                        alert.setTitle("Delete Alias");
+                        alert.setHeaderText("Are you sure?");
+                        alert.initOwner(((Node)getDeleteButton()).getScene().getWindow());
+
+                        Optional<ButtonType> result = alert.showAndWait();
+
+                        if(result.get() == ButtonType.YES)
+                        {
+                            mPlaylistManager.getAliasModel().removeAlias(selected);
+                        }
                     }
                 }
             });

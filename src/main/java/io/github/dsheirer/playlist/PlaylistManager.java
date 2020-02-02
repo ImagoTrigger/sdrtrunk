@@ -38,6 +38,7 @@ import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.preference.UserPreferences;
 import io.github.dsheirer.preference.playlist.PlaylistPreference;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.service.radioreference.RadioReference;
 import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
@@ -66,6 +67,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
     private TunerModel mTunerModel;
     private UserPreferences mUserPreferences;
     private ChannelProcessingManager mChannelProcessingManager;
+    private RadioReference mRadioReference;
     private AtomicBoolean mPlaylistSavePending = new AtomicBoolean();
     private ScheduledFuture<?> mPlaylistSaveFuture;
     private boolean mPlaylistLoading = false;
@@ -90,6 +92,7 @@ public class PlaylistManager implements Listener<ChannelEvent>
         mTunerModel = tunerModel;
         mUserPreferences = userPreferences;
         mChannelProcessingManager = channelProcessingManager;
+        mRadioReference = new RadioReference(mUserPreferences);
 
         //Register for alias, channel and channel map events so that we can
         //save the playlist when there are any changes
@@ -155,6 +158,14 @@ public class PlaylistManager implements Listener<ChannelEvent>
     public AliasModel getAliasModel()
     {
         return mAliasModel;
+    }
+
+    /**
+     * Radio Reference service interface
+     */
+    public RadioReference getRadioReference()
+    {
+        return mRadioReference;
     }
 
     /**

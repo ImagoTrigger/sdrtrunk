@@ -24,44 +24,54 @@ package io.github.dsheirer.gui.playlist.streaming;
 
 
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
-import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfiguration;
-import io.github.dsheirer.gui.control.IntegerTextField;
+import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
+import org.controlsfx.control.ToggleSwitch;
 
 /**
- * Broadcastify streaming configuration editor
+ * Shoutcast V1 streaming configuration editor
  */
-public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyConfiguration>
+public class ShoutcastV1StreamEditor extends AbstractStreamEditor<ShoutcastV1Configuration>
 {
     private GridPane mEditorPane;
-    private TextField mMountPointTextField;
-    private IntegerTextField mFeedIdTextField;
+    private TextField mDescriptionTextField;
+    private TextField mGenreTextField;
+    private ToggleSwitch mPublicToggleSwitch;
 
-    public BroadcastifyStreamEditor()
+    public ShoutcastV1StreamEditor()
     {
     }
 
     @Override
-    public void setItem(BroadcastifyConfiguration item)
+    public BroadcastServerType getBroadcastServerType()
+    {
+        return BroadcastServerType.SHOUTCAST_V1;
+    }
+
+    @Override
+    public void setItem(ShoutcastV1Configuration item)
     {
         super.setItem(item);
 
-        getFeedIdTextField().setDisable(item == null);
-        getMountPointTextField().setDisable(item == null);
+        getDescriptionTextField().setDisable(item == null);
+        getGenreTextField().setDisable(item == null);
+        getPublicToggleSwitch().setDisable(item == null);
 
         if(item != null)
         {
-            getFeedIdTextField().set(item.getFeedID());
-            getMountPointTextField().setText(item.getMountPoint());
+            getDescriptionTextField().setText(item.getDescription());
+            getGenreTextField().setText(item.getGenre());
+            getPublicToggleSwitch().setSelected(item.isPublic());
         }
         else
         {
-            getFeedIdTextField().set(0);
-            getMountPointTextField().setText(null);
+            getDescriptionTextField().setText(null);
+            getGenreTextField().setText(null);
+            getPublicToggleSwitch().setSelected(false);
         }
 
         modifiedProperty().set(false);
@@ -74,14 +84,12 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyC
 
         if(getItem() != null)
         {
-            getItem().setFeedID(getFeedIdTextField().get());
-            getItem().setMountPoint(getMountPointTextField().getText());
+            getItem().setDescription(getDescriptionTextField().getText());
+            getItem().setGenre(getGenreTextField().getText());
+            getItem().setPublic(getPublicToggleSwitch().isSelected());
         }
-    }
 
-    public BroadcastServerType getBroadcastServerType()
-    {
-        return BroadcastServerType.BROADCASTIFY;
+        modifiedProperty().set(false);
     }
 
     protected GridPane getEditorPane()
@@ -118,6 +126,14 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyC
             GridPane.setConstraints(getNameTextField(), 1, 1);
             mEditorPane.getChildren().add(getNameTextField());
 
+            Label publicLabel = new Label("Public");
+            GridPane.setHalignment(publicLabel, HPos.RIGHT);
+            GridPane.setConstraints(publicLabel, 2, 1);
+            mEditorPane.getChildren().add(publicLabel);
+
+            GridPane.setConstraints(getPublicToggleSwitch(), 3, 1);
+            mEditorPane.getChildren().add(getPublicToggleSwitch());
+
             Label hostLabel = new Label("Server");
             GridPane.setHalignment(hostLabel, HPos.RIGHT);
             GridPane.setConstraints(hostLabel, 0, 2);
@@ -134,24 +150,16 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyC
             GridPane.setConstraints(getPortTextField(), 3, 2);
             mEditorPane.getChildren().add(getPortTextField());
 
-            Label mountPointLabel = new Label("Mount Point");
-            GridPane.setHalignment(mountPointLabel, HPos.RIGHT);
-            GridPane.setConstraints(mountPointLabel, 0, 3);
-            mEditorPane.getChildren().add(mountPointLabel);
-
-            GridPane.setConstraints(getMountPointTextField(), 1, 3);
-            mEditorPane.getChildren().add(getMountPointTextField());
-
             Label passwordLabel = new Label("Password");
             GridPane.setHalignment(passwordLabel, HPos.RIGHT);
-            GridPane.setConstraints(passwordLabel, 2, 3);
+            GridPane.setConstraints(passwordLabel, 0, 3);
             mEditorPane.getChildren().add(passwordLabel);
 
-            GridPane.setConstraints(getMaskedPasswordTextField(), 3, 3);
+            GridPane.setConstraints(getMaskedPasswordTextField(), 1, 3);
             mEditorPane.getChildren().add(getMaskedPasswordTextField());
-            GridPane.setConstraints(getUnMaskedPasswordTextField(), 3, 3);
+            GridPane.setConstraints(getUnMaskedPasswordTextField(), 1, 3);
             mEditorPane.getChildren().add(getUnMaskedPasswordTextField());
-            GridPane.setConstraints(getShowPasswordCheckBox(), 4, 3);
+            GridPane.setConstraints(getShowPasswordCheckBox(), 2, 3);
             mEditorPane.getChildren().add(getShowPasswordCheckBox());
 
             Label maxAgeLabel = new Label("Max Recording Age (seconds)");
@@ -170,39 +178,59 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyC
             GridPane.setConstraints(getDelayTextField(), 3, 4);
             mEditorPane.getChildren().add(getDelayTextField());
 
-            Label feedIdLabel = new Label("Feed ID");
-            GridPane.setHalignment(feedIdLabel, HPos.RIGHT);
-            GridPane.setConstraints(feedIdLabel, 0, 5);
-            getEditorPane().getChildren().add(feedIdLabel);
+            Label descriptionLabel = new Label("Description");
+            GridPane.setHalignment(descriptionLabel, HPos.RIGHT);
+            GridPane.setConstraints(descriptionLabel, 0, 5);
+            mEditorPane.getChildren().add(descriptionLabel);
 
-            GridPane.setConstraints(getFeedIdTextField(), 1, 5);
-            getEditorPane().getChildren().add(getFeedIdTextField());
+            GridPane.setConstraints(getDescriptionTextField(), 1, 5, 3, 1);
+            mEditorPane.getChildren().add(getDescriptionTextField());
+
+            Label genreLabel = new Label("Genre");
+            GridPane.setHalignment(genreLabel, HPos.RIGHT);
+            GridPane.setConstraints(genreLabel, 0, 6);
+            mEditorPane.getChildren().add(genreLabel);
+
+            GridPane.setConstraints(getGenreTextField(), 1, 6, 3, 1);
+            mEditorPane.getChildren().add(getGenreTextField());
         }
 
         return mEditorPane;
     }
 
-    private TextField getMountPointTextField()
+    private TextField getDescriptionTextField()
     {
-        if(mMountPointTextField == null)
+        if(mDescriptionTextField == null)
         {
-            mMountPointTextField = new TextField();
-            mMountPointTextField.setDisable(true);
-            mMountPointTextField.textProperty().addListener(mEditorModificationListener);
+            mDescriptionTextField = new TextField();
+            mDescriptionTextField.setDisable(true);
+            mDescriptionTextField.textProperty().addListener(mEditorModificationListener);
         }
 
-        return mMountPointTextField;
+        return mDescriptionTextField;
     }
 
-    private IntegerTextField getFeedIdTextField()
+    private TextField getGenreTextField()
     {
-        if(mFeedIdTextField == null)
+        if(mGenreTextField == null)
         {
-            mFeedIdTextField = new IntegerTextField();
-            mFeedIdTextField.setDisable(true);
-            mFeedIdTextField.textProperty().addListener(mEditorModificationListener);
+            mGenreTextField = new TextField();
+            mGenreTextField.setDisable(true);
+            mGenreTextField.textProperty().addListener(mEditorModificationListener);
         }
 
-        return mFeedIdTextField;
+        return mGenreTextField;
+    }
+
+    private ToggleSwitch getPublicToggleSwitch()
+    {
+        if(mPublicToggleSwitch == null)
+        {
+            mPublicToggleSwitch = new ToggleSwitch();
+            mPublicToggleSwitch.setDisable(true);
+            mPublicToggleSwitch.selectedProperty().addListener((observable, oldValue, newValue) -> modifiedProperty().set(true));
+        }
+
+        return mPublicToggleSwitch;
     }
 }

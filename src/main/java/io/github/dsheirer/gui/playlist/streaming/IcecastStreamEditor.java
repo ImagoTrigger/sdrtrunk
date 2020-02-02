@@ -23,9 +23,7 @@
 package io.github.dsheirer.gui.playlist.streaming;
 
 
-import io.github.dsheirer.audio.broadcast.BroadcastServerType;
-import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfiguration;
-import io.github.dsheirer.gui.control.IntegerTextField;
+import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
@@ -33,35 +31,47 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 
 /**
- * Broadcastify streaming configuration editor
+ * Icecast streaming configuration editor
  */
-public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyConfiguration>
+public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastConfiguration>
 {
     private GridPane mEditorPane;
     private TextField mMountPointTextField;
-    private IntegerTextField mFeedIdTextField;
+    private TextField mUserNameTextField;
+    private TextField mDescriptionTextField;
+    private TextField mGenreTextField;
+    private TextField mURLTextField;
 
-    public BroadcastifyStreamEditor()
+    public IcecastStreamEditor()
     {
     }
 
     @Override
-    public void setItem(BroadcastifyConfiguration item)
+    public void setItem(IcecastConfiguration item)
     {
         super.setItem(item);
 
-        getFeedIdTextField().setDisable(item == null);
         getMountPointTextField().setDisable(item == null);
+        getUserNameTextField().setDisable(item == null);
+        getDescriptionTextField().setDisable(item == null);
+        getGenreTextField().setDisable(item == null);
+        getURLTextField().setDisable(item == null);
 
         if(item != null)
         {
-            getFeedIdTextField().set(item.getFeedID());
             getMountPointTextField().setText(item.getMountPoint());
+            getUserNameTextField().setText(item.getUserName());
+            getDescriptionTextField().setText(item.getDescription());
+            getGenreTextField().setText(item.getGenre());
+            getURLTextField().setText(item.getURL());
         }
         else
         {
-            getFeedIdTextField().set(0);
             getMountPointTextField().setText(null);
+            getUserNameTextField().setText(null);
+            getDescriptionTextField().setText(null);
+            getGenreTextField().setText(null);
+            getURLTextField().setText(null);
         }
 
         modifiedProperty().set(false);
@@ -74,14 +84,14 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyC
 
         if(getItem() != null)
         {
-            getItem().setFeedID(getFeedIdTextField().get());
             getItem().setMountPoint(getMountPointTextField().getText());
+            getItem().setUserName(getUserNameTextField().getText());
+            getItem().setDescription(getDescriptionTextField().getText());
+            getItem().setGenre(getGenreTextField().getText());
+            getItem().setURL(getURLTextField().getText());
         }
-    }
 
-    public BroadcastServerType getBroadcastServerType()
-    {
-        return BroadcastServerType.BROADCASTIFY;
+        modifiedProperty().set(false);
     }
 
     protected GridPane getEditorPane()
@@ -142,41 +152,65 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyC
             GridPane.setConstraints(getMountPointTextField(), 1, 3);
             mEditorPane.getChildren().add(getMountPointTextField());
 
+            Label userNameLabel = new Label("User Name");
+            GridPane.setHalignment(userNameLabel, HPos.RIGHT);
+            GridPane.setConstraints(userNameLabel, 0, 4);
+            mEditorPane.getChildren().add(userNameLabel);
+
+            GridPane.setConstraints(getUserNameTextField(), 1, 4);
+            mEditorPane.getChildren().add(getUserNameTextField());
+
             Label passwordLabel = new Label("Password");
             GridPane.setHalignment(passwordLabel, HPos.RIGHT);
-            GridPane.setConstraints(passwordLabel, 2, 3);
+            GridPane.setConstraints(passwordLabel, 2, 4);
             mEditorPane.getChildren().add(passwordLabel);
 
-            GridPane.setConstraints(getMaskedPasswordTextField(), 3, 3);
+            GridPane.setConstraints(getMaskedPasswordTextField(), 3, 4);
             mEditorPane.getChildren().add(getMaskedPasswordTextField());
-            GridPane.setConstraints(getUnMaskedPasswordTextField(), 3, 3);
+            GridPane.setConstraints(getUnMaskedPasswordTextField(), 3, 4);
             mEditorPane.getChildren().add(getUnMaskedPasswordTextField());
-            GridPane.setConstraints(getShowPasswordCheckBox(), 4, 3);
+            GridPane.setConstraints(getShowPasswordCheckBox(), 4, 4);
             mEditorPane.getChildren().add(getShowPasswordCheckBox());
 
             Label maxAgeLabel = new Label("Max Recording Age (seconds)");
             GridPane.setHalignment(maxAgeLabel, HPos.RIGHT);
-            GridPane.setConstraints(maxAgeLabel, 0, 4);
+            GridPane.setConstraints(maxAgeLabel, 0, 5);
             mEditorPane.getChildren().add(maxAgeLabel);
 
-            GridPane.setConstraints(getMaxAgeTextField(), 1, 4);
+            GridPane.setConstraints(getMaxAgeTextField(), 1, 5);
             mEditorPane.getChildren().add(getMaxAgeTextField());
 
             Label delayLabel = new Label("Delay (seconds)");
             GridPane.setHalignment(delayLabel, HPos.RIGHT);
-            GridPane.setConstraints(delayLabel, 2, 4);
+            GridPane.setConstraints(delayLabel, 2, 5);
             mEditorPane.getChildren().add(delayLabel);
 
-            GridPane.setConstraints(getDelayTextField(), 3, 4);
+            GridPane.setConstraints(getDelayTextField(), 3, 5);
             mEditorPane.getChildren().add(getDelayTextField());
 
-            Label feedIdLabel = new Label("Feed ID");
-            GridPane.setHalignment(feedIdLabel, HPos.RIGHT);
-            GridPane.setConstraints(feedIdLabel, 0, 5);
-            getEditorPane().getChildren().add(feedIdLabel);
+            Label descriptionLabel = new Label("Description");
+            GridPane.setHalignment(descriptionLabel, HPos.RIGHT);
+            GridPane.setConstraints(descriptionLabel, 0, 6);
+            mEditorPane.getChildren().add(descriptionLabel);
 
-            GridPane.setConstraints(getFeedIdTextField(), 1, 5);
-            getEditorPane().getChildren().add(getFeedIdTextField());
+            GridPane.setConstraints(getDescriptionTextField(), 1, 6, 3, 1);
+            mEditorPane.getChildren().add(getDescriptionTextField());
+
+            Label genreLabel = new Label("Genre");
+            GridPane.setHalignment(genreLabel, HPos.RIGHT);
+            GridPane.setConstraints(genreLabel, 0, 7);
+            mEditorPane.getChildren().add(genreLabel);
+
+            GridPane.setConstraints(getGenreTextField(), 1, 7, 3, 1);
+            mEditorPane.getChildren().add(getGenreTextField());
+
+            Label urlLabel = new Label("URL");
+            GridPane.setHalignment(urlLabel, HPos.RIGHT);
+            GridPane.setConstraints(urlLabel, 0, 8);
+            mEditorPane.getChildren().add(urlLabel);
+
+            GridPane.setConstraints(getURLTextField(), 1, 8, 3, 1);
+            mEditorPane.getChildren().add(getURLTextField());
         }
 
         return mEditorPane;
@@ -194,15 +228,51 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyC
         return mMountPointTextField;
     }
 
-    private IntegerTextField getFeedIdTextField()
+    private TextField getUserNameTextField()
     {
-        if(mFeedIdTextField == null)
+        if(mUserNameTextField == null)
         {
-            mFeedIdTextField = new IntegerTextField();
-            mFeedIdTextField.setDisable(true);
-            mFeedIdTextField.textProperty().addListener(mEditorModificationListener);
+            mUserNameTextField = new TextField();
+            mUserNameTextField.setDisable(true);
+            mUserNameTextField.textProperty().addListener(mEditorModificationListener);
         }
 
-        return mFeedIdTextField;
+        return mUserNameTextField;
+    }
+
+    private TextField getDescriptionTextField()
+    {
+        if(mDescriptionTextField == null)
+        {
+            mDescriptionTextField = new TextField();
+            mDescriptionTextField.setDisable(true);
+            mDescriptionTextField.textProperty().addListener(mEditorModificationListener);
+        }
+
+        return mDescriptionTextField;
+    }
+
+    private TextField getGenreTextField()
+    {
+        if(mGenreTextField == null)
+        {
+            mGenreTextField = new TextField();
+            mGenreTextField.setDisable(true);
+            mGenreTextField.textProperty().addListener(mEditorModificationListener);
+        }
+
+        return mGenreTextField;
+    }
+
+    private TextField getURLTextField()
+    {
+        if(mURLTextField == null)
+        {
+            mURLTextField = new TextField();
+            mURLTextField.setDisable(true);
+            mURLTextField.textProperty().addListener(mEditorModificationListener);
+        }
+
+        return mURLTextField;
     }
 }

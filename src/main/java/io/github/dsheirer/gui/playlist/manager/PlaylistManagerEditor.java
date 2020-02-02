@@ -29,24 +29,25 @@ import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.preference.PreferenceType;
 import io.github.dsheirer.preference.UserPreferences;
 import javafx.application.Platform;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
 import javafx.scene.control.Separator;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.util.Callback;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,12 +72,12 @@ public class PlaylistManagerEditor extends HBox
 
     private PlaylistManager mPlaylistManager;
     private UserPreferences mUserPreferences;
-    private ListView<Path> mPlaylistPathView;
+    private TableView<Path> mPlaylistTableView;
     private VBox mButtonBox;
     private Button mSelectButton;
     private Button mAddButton;
     private Button mRemoveButton;
-    private Button mCopyButton;
+    private Button mCloneButton;
     private Button mNewButton;
     private Button mDeleteButton;
 
@@ -94,8 +95,8 @@ public class PlaylistManagerEditor extends HBox
         MyEventBus.getEventBus().register(this);
 
         setPadding(new Insets(5, 5, 5, 5));
-        HBox.setHgrow(getPlaylistPathView(), Priority.ALWAYS);
-        getChildren().addAll(getPlaylistPathView(), getButtonBox());
+        HBox.setHgrow(getPlaylistTableView(), Priority.ALWAYS);
+        getChildren().addAll(getPlaylistTableView(), getButtonBox());
         updateButtons();
     }
 
@@ -113,49 +114,101 @@ public class PlaylistManagerEditor extends HBox
      */
     private void savePlaylistsPreference()
     {
-        mUserPreferences.getPlaylistPreference().setPlaylistList(getPlaylistPathView().getItems());
+        mUserPreferences.getPlaylistPreference().setPlaylistList(getPlaylistTableView().getItems());
     }
 
-    private ListView<Path> getPlaylistPathView()
+    private TableView<Path> getPlaylistTableView()
     {
-        if(mPlaylistPathView == null)
+        if(mPlaylistTableView == null)
         {
-            mPlaylistPathView = new ListView<>();
-            mPlaylistPathView.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Path>()
+            mPlaylistTableView = new TableView<>();
+            TableColumn<Path,String> iconColumn = new TableColumn();
+            iconColumn.setPrefWidth(25);
+            iconColumn.setCellFactory(new Callback<TableColumn<Path,String>,TableCell<Path,String>>()
             {
                 @Override
-                public void changed(ObservableValue<? extends Path> observable, Path oldValue, Path newValue)
+                public TableCell<Path,String> call(TableColumn<Path,String> param)
                 {
-                    updateButtons();
+                    TableCell<Path,String> tableCell = new TableCell<>()
+                    {
+                        @Override
+                        protected void updateItem(String item, boolean empty)
+                        {
+                            super.updateItem(item, empty);
+
+                            if(empty || getTableRow() == null || getTableRow().getItem() == null)
+                            {
+                                setGraphic(null);
+                            }
+                            else
+                            {
+                                Path path = getTableRow().getItem();
+
+                                if(isCurrent(path))
+                                {
+                                    IconNode iconNode  = new IconNode(FontAwesome.CHECK);
+                                    iconNode.setFill(Color.GREEN);
+                                    setGraphic(iconNode);
+                                }
+                                else if(!path.toFile().exists())
+                                {
+                                    IconNode iconNode  = new IconNode(FontAwesome.TIMES);
+                                    iconNode.setFill(Color.RED);
+                                    setGraphic(iconNode);
+                                }
+                                else
+                                {
+                                    setGraphic(null);
+                                }
+                            }
+                        }
+                    };
+
+                    tableCell.setAlignment(Pos.CENTER);
+                    return tableCell;
                 }
             });
-            mPlaylistPathView.setCellFactory(new Callback<ListView<Path>,ListCell<Path>>()
+
+            TableColumn<Path,String> pathColumn = new TableColumn<>("Playlist");
+            pathColumn.setCellFactory(param -> new TableCell<Path,String>()
             {
                 @Override
-                public ListCell<Path> call(ListView<Path> param)
+                protected void updateItem(String item, boolean empty)
                 {
-                    return new PlaylistPathCell();
+                    if(empty || getTableRow() == null || getTableRow().getItem() == null)
+                    {
+                        setText(null);
+                    }
+                    else
+                    {
+                        setText(getTableRow().getItem().toString());
+                    }
                 }
             });
+            pathColumn.setPrefWidth(650);
+
+            mPlaylistTableView.getColumns().addAll(iconColumn, pathColumn);
+
+            mPlaylistTableView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> updateButtons());
 
             List<Path> playlistPaths = mUserPreferences.getPlaylistPreference().getPlaylistList();
 
-            mPlaylistPathView.getItems().addAll(playlistPaths);
+            mPlaylistTableView.getItems().addAll(playlistPaths);
         }
 
-        return mPlaylistPathView;
+        return mPlaylistTableView;
     }
 
     private void updateButtons()
     {
-        Path selected = getPlaylistPathView().getSelectionModel().getSelectedItem();
+        Path selected = getPlaylistTableView().getSelectionModel().getSelectedItem();
 
         boolean itemSelected = (selected != null);
         boolean isCurrent = isCurrent(selected);
 
         getSelectButton().setDisable(!itemSelected || isCurrent);
         getRemoveButton().setDisable(!itemSelected || isCurrent);
-        getCopyButton().setDisable(!itemSelected || (selected != null && !selected.toFile().exists()));
+        getCloneButton().setDisable(!itemSelected || (selected != null && !selected.toFile().exists()));
         getDeleteButton().setDisable(!itemSelected || isCurrent || (selected != null && !selected.toFile().exists()));
     }
 
@@ -169,7 +222,7 @@ public class PlaylistManagerEditor extends HBox
             mButtonBox.setAlignment(Pos.TOP_CENTER);
             mButtonBox.getChildren().add(getSelectButton());
             mButtonBox.getChildren().add(new Separator());
-            mButtonBox.getChildren().addAll(getNewButton(), getAddButton(), getRemoveButton(), getCopyButton());
+            mButtonBox.getChildren().addAll(getNewButton(), getAddButton(), getRemoveButton(), getCloneButton());
             mButtonBox.getChildren().add(new Separator());
             mButtonBox.getChildren().add(getDeleteButton());
         }
@@ -182,37 +235,33 @@ public class PlaylistManagerEditor extends HBox
         if(mSelectButton == null)
         {
             mSelectButton = new Button("Select");
+            mSelectButton.setTooltip(new Tooltip("Sets the selected playlist as the current playlist"));
             mSelectButton.setMaxWidth(Double.MAX_VALUE);
-            mSelectButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    Path current = mUserPreferences.getPlaylistPreference().getPlaylist();
-                    Path selected = getPlaylistPathView().getSelectionModel().getSelectedItem();
+            mSelectButton.setOnAction(event -> {
+                Path current = mUserPreferences.getPlaylistPreference().getPlaylist();
+                Path selected = getPlaylistTableView().getSelectionModel().getSelectedItem();
 
-                    if(selected != null)
+                if(selected != null)
+                {
+                    try
                     {
+                        mPlaylistManager.setPlaylist(selected);
+                    }
+                    catch(IOException ioe)
+                    {
+                        mLog.error("Error loading playlist [" + (selected != null ? selected.toString() : "null") + "]");
+
+                        new Alert(Alert.AlertType.ERROR, "Unable to load selected playlist.  " +
+                            "Reverting to previous playlist", ButtonType.OK).show();
+
                         try
                         {
-                            mPlaylistManager.setPlaylist(selected);
+                            mPlaylistManager.setPlaylist(current);
                         }
-                        catch(IOException ioe)
+                        catch(IOException ioe2)
                         {
-                            mLog.error("Error loading playlist [" + (selected != null ? selected.toString() : "null") + "]");
-
-                            new Alert(Alert.AlertType.ERROR, "Unable to load selected playlist.  " +
-                                "Reverting to previous playlist", ButtonType.OK).show();
-
-                            try
-                            {
-                                mPlaylistManager.setPlaylist(current);
-                            }
-                            catch(IOException ioe2)
-                            {
-                                mLog.error("Error reverting to previous playlist [" +
-                                    (current != null ? current.toString() : "null") + "]");
-                            }
+                            mLog.error("Error reverting to previous playlist [" +
+                                (current != null ? current.toString() : "null") + "]");
                         }
                     }
                 }
@@ -227,38 +276,34 @@ public class PlaylistManagerEditor extends HBox
         if(mAddButton == null)
         {
             mAddButton = new Button("Add");
+            mAddButton.setTooltip(new Tooltip("Add an existing playlist from the file system"));
             mAddButton.setMaxWidth(Double.MAX_VALUE);
-            mAddButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
+            mAddButton.setOnAction(event -> {
+                FileChooser fileChooser = new FileChooser();
+                fileChooser.setTitle("Add Playlist");
+                fileChooser.setInitialDirectory(mUserPreferences.getDirectoryPreference().getDirectoryPlaylist().toFile());
+                fileChooser.getExtensionFilters().addAll(PLAYLIST_FILE_FILTER, ALL_FILES_FILE_FILTER);
+
+                File playlistToAdd = fileChooser.showOpenDialog(null);
+
+                if(playlistToAdd != null)
                 {
-                    FileChooser fileChooser = new FileChooser();
-                    fileChooser.setTitle("Add Playlist");
-                    fileChooser.setInitialDirectory(mUserPreferences.getDirectoryPreference().getDirectoryPlaylist().toFile());
-                    fileChooser.getExtensionFilters().addAll(PLAYLIST_FILE_FILTER, ALL_FILES_FILE_FILTER);
-
-                    File playlistToAdd = fileChooser.showOpenDialog(null);
-
-                    if(playlistToAdd != null)
+                    if(PlaylistManager.isPlaylist(playlistToAdd.toPath()))
                     {
-                        if(PlaylistManager.isPlaylist(playlistToAdd.toPath()))
+                        if(!getPlaylistTableView().getItems().contains(playlistToAdd.toPath()))
                         {
-                            if(!getPlaylistPathView().getItems().contains(playlistToAdd.toPath()))
-                            {
-                                getPlaylistPathView().getItems().add(playlistToAdd.toPath());
-                                savePlaylistsPreference();
-                            }
-                            else
-                            {
-                                new Alert(Alert.AlertType.INFORMATION, "Playlist already added", ButtonType.OK).show();
-                            }
+                            getPlaylistTableView().getItems().add(playlistToAdd.toPath());
+                            savePlaylistsPreference();
                         }
                         else
                         {
-                            new Alert(Alert.AlertType.ERROR, "This file is not a valid playlist",
-                                ButtonType.OK).show();
+                            new Alert(Alert.AlertType.INFORMATION, "Playlist already added", ButtonType.OK).show();
                         }
+                    }
+                    else
+                    {
+                        new Alert(Alert.AlertType.ERROR, "This file is not a valid playlist",
+                            ButtonType.OK).show();
                     }
                 }
             });
@@ -267,63 +312,59 @@ public class PlaylistManagerEditor extends HBox
         return mAddButton;
     }
 
-    private Button getCopyButton()
+    private Button getCloneButton()
     {
-        if(mCopyButton == null)
+        if(mCloneButton == null)
         {
-            mCopyButton = new Button("Copy");
-            mCopyButton.setMaxWidth(Double.MAX_VALUE);
-            mCopyButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
+            mCloneButton = new Button("Clone");
+            mCloneButton.setTooltip(new Tooltip("Create a clone (copy) of the currently selected playlist"));
+            mCloneButton.setMaxWidth(Double.MAX_VALUE);
+            mCloneButton.setOnAction(event -> {
+                Path selected = getPlaylistTableView().getSelectionModel().getSelectedItem();
+
+                if(selected != null)
                 {
-                    Path selected = getPlaylistPathView().getSelectionModel().getSelectedItem();
+                    FileChooser fileChooser = new FileChooser();
+                    fileChooser.setTitle("Copy Playlist");
+                    fileChooser.setInitialDirectory(mUserPreferences.getDirectoryPreference().getDirectoryPlaylist().toFile());
+                    fileChooser.setInitialFileName(selected.getName(selected.getNameCount() - 1).toString());
+                    fileChooser.getExtensionFilters().addAll(PLAYLIST_FILE_FILTER, ALL_FILES_FILE_FILTER);
 
-                    if(selected != null)
+                    File copyFile = fileChooser.showSaveDialog(null);
+
+                    if(copyFile != null)
                     {
-                        FileChooser fileChooser = new FileChooser();
-                        fileChooser.setTitle("Copy Playlist");
-                        fileChooser.setInitialDirectory(mUserPreferences.getDirectoryPreference().getDirectoryPlaylist().toFile());
-                        fileChooser.setInitialFileName(selected.getName(selected.getNameCount() - 1).toString());
-                        fileChooser.getExtensionFilters().addAll(PLAYLIST_FILE_FILTER, ALL_FILES_FILE_FILTER);
-
-                        File copyFile = fileChooser.showSaveDialog(null);
-
-                        if(copyFile != null)
+                        if(!copyFile.toString().endsWith(".xml"))
                         {
-                            if(!copyFile.toString().endsWith(".xml"))
-                            {
-                                copyFile = new File(copyFile.toString() + ".xml");
+                            copyFile = new File(copyFile.toString() + ".xml");
 
-                                if(copyFile.exists())
-                                {
-                                    new Alert(Alert.AlertType.ERROR, "File already exists.  Please copy " +
-                                        "to a new file name", ButtonType.OK).show();
-                                    return;
-                                }
+                            if(copyFile.exists())
+                            {
+                                new Alert(Alert.AlertType.ERROR, "File already exists.  Please copy " +
+                                    "to a new file name", ButtonType.OK).show();
+                                return;
                             }
+                        }
 
-                            try
-                            {
-                                Files.copy(selected.toFile(), copyFile);
-                                getPlaylistPathView().getItems().add(copyFile.toPath());
-                                savePlaylistsPreference();
-                            }
-                            catch(IOException ioe)
-                            {
-                                mLog.error("Error creating copy of playlist [" + selected.toString() + "] as [" + copyFile.toString() + "]", ioe);
-                                Alert alert = new Alert(Alert.AlertType.ERROR, "Unable to create copy of playlist", ButtonType.OK);
-                                alert.initOwner(((Node)getCopyButton()).getScene().getWindow());
-                                alert.show();
-                            }
+                        try
+                        {
+                            Files.copy(selected.toFile(), copyFile);
+                            getPlaylistTableView().getItems().add(copyFile.toPath());
+                            savePlaylistsPreference();
+                        }
+                        catch(IOException ioe)
+                        {
+                            mLog.error("Error creating copy of playlist [" + selected.toString() + "] as [" + copyFile.toString() + "]", ioe);
+                            Alert alert = new Alert(Alert.AlertType.ERROR, "Unable to create copy of playlist", ButtonType.OK);
+                            alert.initOwner(((Node)getCloneButton()).getScene().getWindow());
+                            alert.show();
                         }
                     }
                 }
             });
         }
 
-        return mCopyButton;
+        return mCloneButton;
     }
 
     private Button getRemoveButton()
@@ -331,19 +372,15 @@ public class PlaylistManagerEditor extends HBox
         if(mRemoveButton == null)
         {
             mRemoveButton = new Button("Remove");
+            mRemoveButton.setTooltip(new Tooltip("Remove the currently selected playlist from the application"));
             mRemoveButton.setMaxWidth(Double.MAX_VALUE);
-            mRemoveButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    Path selected = getPlaylistPathView().getSelectionModel().getSelectedItem();
+            mRemoveButton.setOnAction(event -> {
+                Path selected = getPlaylistTableView().getSelectionModel().getSelectedItem();
 
-                    if(selected != null)
-                    {
-                        getPlaylistPathView().getItems().remove(selected);
-                        savePlaylistsPreference();
-                    }
+                if(selected != null)
+                {
+                    getPlaylistTableView().getItems().remove(selected);
+                    savePlaylistsPreference();
                 }
             });
         }
@@ -356,48 +393,44 @@ public class PlaylistManagerEditor extends HBox
         if(mNewButton == null)
         {
             mNewButton = new Button("New");
+            mNewButton.setTooltip(new Tooltip("Create a new playlist"));
             mNewButton.setMaxWidth(Double.MAX_VALUE);
-            mNewButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
+            mNewButton.setOnAction(event -> {
+                FileChooser fileChooser = new FileChooser();
+                fileChooser.setTitle("New Playlist");
+                fileChooser.setInitialDirectory(mUserPreferences.getDirectoryPreference().getDirectoryPlaylist().toFile());
+                fileChooser.setInitialFileName("*.xml");
+                fileChooser.getExtensionFilters().addAll(PLAYLIST_FILE_FILTER);
+
+                File newFile = fileChooser.showSaveDialog(null);
+
+                if(newFile != null)
                 {
-                    FileChooser fileChooser = new FileChooser();
-                    fileChooser.setTitle("New Playlist");
-                    fileChooser.setInitialDirectory(mUserPreferences.getDirectoryPreference().getDirectoryPlaylist().toFile());
-                    fileChooser.setInitialFileName("*.xml");
-                    fileChooser.getExtensionFilters().addAll(PLAYLIST_FILE_FILTER);
-
-                    File newFile = fileChooser.showSaveDialog(null);
-
-                    if(newFile != null)
+                    try
                     {
-                        try
-                        {
-                            Path toCreate = newFile.toPath();
+                        Path toCreate = newFile.toPath();
 
-                            if(!toCreate.toString().endsWith(".xml"))
+                        if(!toCreate.toString().endsWith(".xml"))
+                        {
+                            toCreate = Paths.get(newFile.toString() + ".xml");
+
+                            //Since we modified the file, we have to check for existence to avoid overwriting
+                            if(toCreate.toFile().exists())
                             {
-                                toCreate = Paths.get(newFile.toString() + ".xml");
-
-                                //Since we modified the file, we have to check for existence to avoid overwriting
-                                if(toCreate.toFile().exists())
-                                {
-                                    new Alert(Alert.AlertType.ERROR, "File already exists.  Please choose " +
-                                        "a new file name", ButtonType.OK).show();
-                                    return;
-                                }
+                                new Alert(Alert.AlertType.ERROR, "File already exists.  Please choose " +
+                                    "a new file name", ButtonType.OK).show();
+                                return;
                             }
+                        }
 
-                            mPlaylistManager.createEmptyPlaylist(toCreate);
-                            getPlaylistPathView().getItems().add(toCreate);
-                            savePlaylistsPreference();
-                        }
-                        catch(IOException ioe)
-                        {
-                            mLog.error("Error creating new playlist file [" + newFile.toString() + "]");
-                            new Alert(Alert.AlertType.ERROR, "Unable to create new playlist", ButtonType.OK).show();
-                        }
+                        mPlaylistManager.createEmptyPlaylist(toCreate);
+                        getPlaylistTableView().getItems().add(toCreate);
+                        savePlaylistsPreference();
+                    }
+                    catch(IOException ioe)
+                    {
+                        mLog.error("Error creating new playlist file [" + newFile.toString() + "]");
+                        new Alert(Alert.AlertType.ERROR, "Unable to create new playlist", ButtonType.OK).show();
                     }
                 }
             });
@@ -411,33 +444,29 @@ public class PlaylistManagerEditor extends HBox
         if(mDeleteButton == null)
         {
             mDeleteButton = new Button("Delete");
+            mDeleteButton.setTooltip(new Tooltip("Remove the currently selected playlist and delete it from the file system"));
             mDeleteButton.setMaxWidth(Double.MAX_VALUE);
-            mDeleteButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
+            mDeleteButton.setOnAction(event -> {
+                Path selected = getPlaylistTableView().getSelectionModel().getSelectedItem();
+
+                if(selected != null)
                 {
-                    Path selected = getPlaylistPathView().getSelectionModel().getSelectedItem();
+                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Delete playlist from file system?",
+                        ButtonType.YES, ButtonType.NO);
+                    alert.setHeaderText("Are you sure?");
+                    alert.initOwner(((Node)getDeleteButton()).getScene().getWindow());
+                    Button noButton = (Button)alert.getDialogPane().lookupButton(ButtonType.NO);
+                    noButton.setDefaultButton(true);
+                    Button yesButton = (Button)alert.getDialogPane().lookupButton(ButtonType.YES);
+                    yesButton.setDefaultButton(false);
 
-                    if(selected != null)
+                    Optional<ButtonType> optional = alert.showAndWait();
+
+                    if(optional.get() == ButtonType.YES)
                     {
-                        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Delete playlist from file system?",
-                            ButtonType.YES, ButtonType.NO);
-                        alert.setHeaderText("Are you sure?");
-                        alert.initOwner(((Node)getDeleteButton()).getScene().getWindow());
-                        Button noButton = (Button)alert.getDialogPane().lookupButton(ButtonType.NO);
-                        noButton.setDefaultButton(true);
-                        Button yesButton = (Button)alert.getDialogPane().lookupButton(ButtonType.YES);
-                        yesButton.setDefaultButton(false);
-
-                        Optional<ButtonType> optional = alert.showAndWait();
-
-                        if(optional.get() == ButtonType.YES)
-                        {
-                            getPlaylistPathView().getItems().remove(selected);
-                            savePlaylistsPreference();
-                            selected.toFile().delete();
-                        }
+                        getPlaylistTableView().getItems().remove(selected);
+                        savePlaylistsPreference();
+                        selected.toFile().delete();
                     }
                 }
             });
@@ -454,8 +483,6 @@ public class PlaylistManagerEditor extends HBox
     @Subscribe
     public void preferenceUpdated(PreferenceType preferenceType)
     {
-        mLog.debug("Preference Type Updated:" + preferenceType);
-
         if(preferenceType == PreferenceType.PLAYLIST)
         {
             Platform.runLater(new Runnable()
@@ -463,41 +490,9 @@ public class PlaylistManagerEditor extends HBox
                 @Override
                 public void run()
                 {
-                    getPlaylistPathView().refresh();
+                    getPlaylistTableView().refresh();
                 }
             });
-        }
-    }
-
-    /**
-     * Custom cell renderer for playlist path instances
-     */
-    public class PlaylistPathCell extends ListCell<Path>
-    {
-        @Override
-        protected void updateItem(Path item, boolean empty)
-        {
-            super.updateItem(item, empty);
-
-            if(empty)
-            {
-                setText(null);
-            }
-            else
-            {
-                if(isCurrent(item))
-                {
-                    setText(item.toString() + " (SELECTED)");
-                }
-                else if(!item.toFile().exists())
-                {
-                    setText(item.toString() + " (ERROR - file doesn't exist)");
-                }
-                else
-                {
-                    setText(item.toString());
-                }
-            }
         }
     }
 }

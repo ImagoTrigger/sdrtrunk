@@ -25,31 +25,13 @@ package io.github.dsheirer.gui.playlist.streaming;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 
 /**
- * Factory for creating broadcast configuration editors
+ * Stream configuration editor for Icecast 2.3 TCP broadcast
  */
-public class StreamEditorFactory
+public class IcecastTCPStreamEditor extends IcecastStreamEditor
 {
-    /**
-     * Creates a new editor for the specified broadcast server type
-     * @param broadcastServerType to edit
-     * @return editor or the default unknown editor
-     */
-    public static AbstractStreamEditor getEditor(BroadcastServerType broadcastServerType)
+    @Override
+    public BroadcastServerType getBroadcastServerType()
     {
-        switch(broadcastServerType)
-        {
-            case BROADCASTIFY:
-                return new BroadcastifyStreamEditor();
-            case ICECAST_HTTP:
-                return new IcecastHTTPStreamEditor();
-            case ICECAST_TCP:
-                return new IcecastTCPStreamEditor();
-            case SHOUTCAST_V1:
-                return new ShoutcastV1StreamEditor();
-            case SHOUTCAST_V2:
-                return new ShoutcastV2StreamEditor();
-            default:
-                return new UnknownStreamEditor();
-        }
+        return BroadcastServerType.ICECAST_TCP;
     }
 }

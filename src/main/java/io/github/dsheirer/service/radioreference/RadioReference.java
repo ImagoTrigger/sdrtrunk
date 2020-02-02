@@ -30,6 +30,8 @@ import io.github.dsheirer.rrapi.RadioReferenceException;
 import io.github.dsheirer.rrapi.RadioReferenceService;
 import io.github.dsheirer.rrapi.type.AuthorizationInformation;
 import io.github.dsheirer.rrapi.type.UserInfo;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 
 import java.util.Scanner;
 
@@ -45,6 +47,7 @@ public class RadioReference
     private String mUserName;
     private String mPassword;
     private AuthorizationInformation mAuthorizationInformation;
+    private BooleanProperty mLoggedOn = new SimpleBooleanProperty();
 
     /**
      * Constructs an instance of the radio reference service
@@ -56,6 +59,14 @@ public class RadioReference
 
         //Register to receive notifications of user preference changes
         MyEventBus.getEventBus().register(this);
+    }
+
+    /**
+     * Externally monitored and controlled status indicator for the service logged-on state
+     */
+    public BooleanProperty loggedOnProperty()
+    {
+        return mLoggedOn;
     }
 
     /**

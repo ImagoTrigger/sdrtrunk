@@ -1,21 +1,24 @@
-/*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 package io.github.dsheirer.audio.broadcast;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -27,6 +30,7 @@ import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import io.github.dsheirer.audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
 import javafx.beans.Observable;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.LongProperty;
@@ -49,18 +53,32 @@ import java.net.SocketAddress;
 @JacksonXmlRootElement(localName = "stream")
 public abstract class BroadcastConfiguration
 {
+    // Static unique channel identifier tracking
+    private static int UNIQUE_ID = 0;
+
     private BroadcastFormat mBroadcastFormat = BroadcastFormat.MP3;
     private StringProperty mName = new SimpleStringProperty();
     private StringProperty mHost = new SimpleStringProperty();
-    private IntegerProperty mPort = new SimpleIntegerProperty();
+    private IntegerProperty mPort = new SimpleIntegerProperty(80);
     private StringProperty mPassword = new SimpleStringProperty();
     private LongProperty mDelay = new SimpleLongProperty();
     private LongProperty mMaximumRecordingAge = new SimpleLongProperty(10 * 60 * 1000); //10 minutes default
-    private BooleanProperty mEnabled = new SimpleBooleanProperty(true);
+    private BooleanProperty mEnabled = new SimpleBooleanProperty(false);
+    private BooleanProperty mValid;
+    private int mId = ++UNIQUE_ID;
 
     public BroadcastConfiguration()
     {
-        //No-arg constructor required for JAXB
+    }
+
+    /**
+     * Unique identifier for this configuration.
+     * Note: unique ids are generated at runtime and have no persistent context across sessions.
+     */
+    @JsonIgnore
+    public int getId()
+    {
+        return mId;
     }
 
     /**
@@ -130,6 +148,20 @@ public abstract class BroadcastConfiguration
     public BooleanProperty enabledProperty()
     {
         return mEnabled;
+    }
+
+    /**
+     * Configuration valid property
+     */
+    public BooleanProperty validProperty()
+    {
+        if(mValid == null)
+        {
+            mValid = new SimpleBooleanProperty();
+            mValid.bind(Bindings.and(Bindings.isNotNull(mHost), Bindings.greaterThan(mPort, 0)));
+        }
+
+        return mValid;
     }
 
     /**
@@ -368,7 +400,7 @@ public abstract class BroadcastConfiguration
     @JsonIgnore
     public boolean isValid()
     {
-        return mHost != null && mPort.get() > 0;
+        return validProperty().get();
     }
 
     /**

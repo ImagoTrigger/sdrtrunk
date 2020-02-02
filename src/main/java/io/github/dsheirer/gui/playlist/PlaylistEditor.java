@@ -192,8 +192,9 @@ public class PlaylistEditor extends Application
     {
         if(mRadioReferenceTab == null)
         {
-            mRadioReferenceTab = new Tab("RadioReference.com");
-            mRadioReferenceTab.setContent(new RadioReferenceEditor(mUserPreferences, mJavaFxWindowManager));
+            mRadioReferenceTab = new Tab("Radio Reference");
+            mRadioReferenceTab.setContent(new RadioReferenceEditor(mUserPreferences,
+                mPlaylistManager.getRadioReference(), mJavaFxWindowManager));
         }
 
         return mRadioReferenceTab;

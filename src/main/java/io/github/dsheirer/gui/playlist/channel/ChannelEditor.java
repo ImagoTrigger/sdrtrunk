@@ -32,8 +32,6 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -314,14 +312,8 @@ public class ChannelEditor extends SplitPane
 
             mChannelTableView.setItems(sortedList);
 
-            mChannelTableView.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Channel>()
-            {
-                @Override
-                public void changed(ObservableValue<? extends Channel> observable, Channel oldValue, Channel newValue)
-                {
-                    setChannel(newValue);
-                }
-            });
+            mChannelTableView.getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> setChannel(newValue));
         }
 
         return mChannelTableView;
@@ -374,14 +366,20 @@ public class ChannelEditor extends SplitPane
             mDeleteButton = new Button("Delete");
             mDeleteButton.setDisable(true);
             mDeleteButton.setMaxWidth(Double.MAX_VALUE);
-            mDeleteButton.setOnAction(new EventHandler<ActionEvent>()
-            {
-                @Override
-                public void handle(ActionEvent event)
-                {
-                    Channel selected = getChannelTableView().getSelectionModel().getSelectedItem();
+            mDeleteButton.setOnAction(event -> {
+                Channel selected = getChannelTableView().getSelectionModel().getSelectedItem();
 
-                    if(selected != null)
+                if(selected != null)
+                {
+                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                        "Do you want to delete the selected channel?", ButtonType.NO, ButtonType.YES);
+                    alert.setTitle("Delete Channel");
+                    alert.setHeaderText("Are you sure?");
+                    alert.initOwner(((Node)getDeleteButton()).getScene().getWindow());
+
+                    Optional<ButtonType> result = alert.showAndWait();
+
+                    if(result.get() == ButtonType.YES)
                     {
                         mPlaylistManager.getChannelModel().removeChannel(selected);
                     }

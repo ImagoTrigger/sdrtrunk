@@ -1,45 +1,71 @@
-/*******************************************************************************
- * sdr-trunk
- * Copyright (C) 2014-2020 Dennis Sheirer
+/*
  *
- * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
- * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
- * later version.
+ *  * ******************************************************************************
+ *  * Copyright (C) 2014-2020 Dennis Sheirer
+ *  *
+ *  * This program is free software: you can redistribute it and/or modify
+ *  * it under the terms of the GNU General Public License as published by
+ *  * the Free Software Foundation, either version 3 of the License, or
+ *  * (at your option) any later version.
+ *  *
+ *  * This program is distributed in the hope that it will be useful,
+ *  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  * GNU General Public License for more details.
+ *  *
+ *  * You should have received a copy of the GNU General Public License
+ *  * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *  * *****************************************************************************
  *
- * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
- * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License  along with this program.
- * If not, see <http://www.gnu.org/licenses/>
- *
- ******************************************************************************/
+ */
 
 package io.github.dsheirer.gui.playlist.streaming;
 
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
+import io.github.dsheirer.audio.broadcast.BroadcastFactory;
+import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
+import io.github.dsheirer.audio.broadcast.ConfiguredBroadcast;
+import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
+import io.github.dsheirer.rrapi.type.UserFeedBroadcast;
+import io.github.dsheirer.util.ThreadPool;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import jiconfont.icons.font_awesome.FontAwesome;
+import jiconfont.javafx.IconNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -51,29 +77,50 @@ public class StreamingEditor extends SplitPane
     private final static Logger mLog = LoggerFactory.getLogger(StreamingEditor.class);
 
     private PlaylistManager mPlaylistManager;
-    private TableView<BroadcastConfiguration> mBroadcastConfigurationTableView;
+    private TableView<ConfiguredBroadcast> mConfiguredBroadcastTableView;
     private MenuButton mNewButton;
     private Button mDeleteButton;
     private TabPane mTabPane;
     private Tab mConfigurationTab;
     private Tab mAliasTab;
+    private Label mRadioReferenceLoginLabel;
     private AbstractStreamEditor mCurrentEditor;
     private UnknownStreamEditor mUnknownEditor = new UnknownStreamEditor();
     private Map<BroadcastServerType, AbstractStreamEditor> mEditorMap = new HashMap();
+    private List<UserFeedBroadcast> mBroadcastifyFeeds = new ArrayList<>();
+    private ScrollPane mEditorScrollPane;
 
+    /**
+     * Constructs an instance
+     * @param playlistManager for accessing streaming model
+     */
     public StreamingEditor(PlaylistManager playlistManager)
     {
         mPlaylistManager = playlistManager;
+
+        mPlaylistManager.getRadioReference().loggedOnProperty().addListener(new ChangeListener<Boolean>()
+        {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue)
+            {
+                refreshBroadcastifyStreams();
+            }
+        });
+        refreshBroadcastifyStreams();
 
         VBox buttonsBox = new VBox();
         buttonsBox.getChildren().addAll(getNewButton(), getDeleteButton());
         buttonsBox.setPadding(new Insets(0, 0, 0, 10));
         buttonsBox.setSpacing(10);
 
+        VBox tableAndLabelBox = new VBox();
+        VBox.setVgrow(getConfiguredBroadcastTableView(), Priority.ALWAYS);
+        tableAndLabelBox.getChildren().addAll(getConfiguredBroadcastTableView(), getRadioReferenceLoginLabel());
+
         HBox editorBox = new HBox();
         editorBox.setPadding(new Insets(10, 10, 10, 10));
-        HBox.setHgrow(getBroadcastConfigurationTableView(), Priority.ALWAYS);
-        editorBox.getChildren().addAll(getBroadcastConfigurationTableView(), buttonsBox);
+        HBox.setHgrow(tableAndLabelBox, Priority.ALWAYS);
+        editorBox.getChildren().addAll(tableAndLabelBox, buttonsBox);
         editorBox.setPrefHeight(50);
 
         setOrientation(Orientation.VERTICAL);
@@ -85,11 +132,24 @@ public class StreamingEditor extends SplitPane
         if(editor != getCurrentEditor())
         {
             mCurrentEditor = editor;
-            getConfigurationTab().setContent(getCurrentEditor());
+            getEditorScrollPane().setContent(getCurrentEditor());
         }
     }
 
-    private void setBroadcastConfiguration(BroadcastConfiguration broadcastConfiguration)
+    private ScrollPane getEditorScrollPane()
+    {
+        if(mEditorScrollPane == null)
+        {
+            mEditorScrollPane = new ScrollPane();
+            mEditorScrollPane.setMaxWidth(Double.MAX_VALUE);
+            mEditorScrollPane.setFitToWidth(true);
+            mEditorScrollPane.setContent(getCurrentEditor());
+        }
+
+        return mEditorScrollPane;
+    }
+
+    private void setBroadcastConfiguration(ConfiguredBroadcast configuredBroadcast)
     {
         //Prompt the user to save if the contents of the current channel editor have been modified
         if(getCurrentEditor().modifiedProperty().get())
@@ -116,17 +176,15 @@ public class StreamingEditor extends SplitPane
             }
         }
 
-        getDeleteButton().setDisable(broadcastConfiguration == null);
+        getDeleteButton().setDisable(configuredBroadcast == null);
 
-        mLog.debug("Config:" + broadcastConfiguration.getBroadcastServerType() + " Editor:" + getCurrentEditor().getBroadcastServerType());
-
-        if(broadcastConfiguration == null)
+        if(configuredBroadcast == null)
         {
             setEditor(mUnknownEditor);
         }
         else
         {
-            BroadcastServerType configType = broadcastConfiguration.getBroadcastServerType();
+            BroadcastServerType configType = configuredBroadcast.getBroadcastServerType();
 
             if(configType == null)
             {
@@ -160,9 +218,45 @@ public class StreamingEditor extends SplitPane
             }
         }
 
-        mLog.debug("Config:" + broadcastConfiguration.getBroadcastServerType() + " Updated Editor:" + getCurrentEditor().getBroadcastServerType());
+        getCurrentEditor().setItem(configuredBroadcast.getBroadcastConfiguration());
+    }
 
-        getCurrentEditor().setItem(broadcastConfiguration);
+    /**
+     * Updates the list of broadcastify stream configurations if the service is logged in.
+     */
+    private void refreshBroadcastifyStreams()
+    {
+        if(mPlaylistManager.getRadioReference().loggedOnProperty().get())
+        {
+            ThreadPool.SCHEDULED.submit(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        List<UserFeedBroadcast> feeds = mPlaylistManager.getRadioReference().getService().getUserFeeds();
+                        mBroadcastifyFeeds.clear();
+                        mBroadcastifyFeeds.addAll(feeds);
+                    }
+                    catch(Throwable t)
+                    {
+                        mLog.error("Unable to refresh broadcastify stream configuration(s)");
+                    }
+                }
+            });
+        }
+    }
+
+    private Label getRadioReferenceLoginLabel()
+    {
+        if(mRadioReferenceLoginLabel == null)
+        {
+            mRadioReferenceLoginLabel = new Label("Note: use Radio Reference tab to login and access Broadcastify stream configuration(s)");
+            mRadioReferenceLoginLabel.visibleProperty().bind(mPlaylistManager.getRadioReference().loggedOnProperty().not());
+        }
+
+        return mRadioReferenceLoginLabel;
     }
 
     private AbstractStreamEditor getCurrentEditor()
@@ -192,7 +286,7 @@ public class StreamingEditor extends SplitPane
         if(mConfigurationTab == null)
         {
             mConfigurationTab = new Tab("Configuration");
-            mConfigurationTab.setContent(getCurrentEditor());
+            mConfigurationTab.setContent(getEditorScrollPane());
         }
 
         return mConfigurationTab;
@@ -214,6 +308,26 @@ public class StreamingEditor extends SplitPane
         {
             mNewButton = new MenuButton("New");
             mNewButton.setMaxWidth(Double.MAX_VALUE);
+            mNewButton.setOnShowing(event -> {
+                mNewButton.getItems().clear();
+
+                for(UserFeedBroadcast feed: mBroadcastifyFeeds)
+                {
+                    //Only show a menu item for the feed if it's not already defined
+                    if(mPlaylistManager.getBroadcastModel().getBroadcastConfiguration(feed.getDescription()) == null)
+                    {
+                        mNewButton.getItems().add(new CreateBroadcastifyMenuItem(feed));
+                    }
+                }
+
+                for(BroadcastServerType type: BroadcastServerType.values())
+                {
+                    if(type != BroadcastServerType.BROADCASTIFY && type != BroadcastServerType.UNKNOWN)
+                    {
+                        mNewButton.getItems().add(new CreateBroadcastConfigurationMenuItem(type));
+                    }
+                }
+            });
         }
 
         return mNewButton;
@@ -225,32 +339,138 @@ public class StreamingEditor extends SplitPane
         {
             mDeleteButton = new Button("Delete");
             mDeleteButton.setMaxWidth(Double.MAX_VALUE);
+            mDeleteButton.setOnAction(event -> {
+                BroadcastConfiguration config = getConfiguredBroadcastTableView().getSelectionModel()
+                    .getSelectedItem().getBroadcastConfiguration();
+
+                if(config != null)
+                {
+                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION,
+                        "Do you want to delete the selected stream?", ButtonType.NO, ButtonType.YES);
+                    alert.setTitle("Delete Stream Configuration");
+                    alert.setHeaderText("Are you sure?");
+                    alert.initOwner(((Node)getDeleteButton()).getScene().getWindow());
+
+                    Optional<ButtonType> result = alert.showAndWait();
+
+                    if(result.get() == ButtonType.YES)
+                    {
+                        mPlaylistManager.getBroadcastModel().removeBroadcastConfiguration(config);
+                    }
+                }
+            });
         }
 
         return mDeleteButton;
     }
 
-    private TableView<BroadcastConfiguration> getBroadcastConfigurationTableView()
+    private TableView<ConfiguredBroadcast> getConfiguredBroadcastTableView()
     {
-        if(mBroadcastConfigurationTableView == null)
+        if(mConfiguredBroadcastTableView == null)
         {
-            mBroadcastConfigurationTableView = new TableView<>();
-            mBroadcastConfigurationTableView.setItems(mPlaylistManager.getBroadcastModel().getBroadcastConfigurations());
+            mConfiguredBroadcastTableView = new TableView<>();
+            mConfiguredBroadcastTableView.setItems(mPlaylistManager.getBroadcastModel().getConfiguredBroadcasts());
 
-            TableColumn nameColumn = new TableColumn();
-            nameColumn.setText("Name");
+            TableColumn<ConfiguredBroadcast,Boolean> enabledColumn = new TableColumn("Enabled");
+            enabledColumn.setCellValueFactory(new PropertyValueFactory<>("enabled"));
+            enabledColumn.setCellFactory(param -> {
+                TableCell<ConfiguredBroadcast,Boolean> tableCell = new TableCell<>()
+                {
+                    @Override
+                    protected void updateItem(Boolean item, boolean empty)
+                    {
+                        setAlignment(Pos.CENTER);
+                        setText(null);
+
+                        if(empty || item == null || !item)
+                        {
+                            setGraphic(null);
+                        }
+                        else
+                        {
+                            IconNode iconNode = new IconNode(FontAwesome.CHECK);
+                            iconNode.setFill(Color.GREEN);
+                            setGraphic(iconNode);
+                        }
+                    }
+                };
+
+                return tableCell;
+            });
+
+            TableColumn nameColumn = new TableColumn("Name");
+            nameColumn.setPrefWidth(300);
             nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
 
             TableColumn typeColumn = new TableColumn();
+            typeColumn.setPrefWidth(125);
             typeColumn.setText("Format");
             typeColumn.setCellValueFactory(new PropertyValueFactory<>("broadcastServerType"));
 
-            mBroadcastConfigurationTableView.getColumns().addAll(nameColumn, typeColumn);
 
-            mBroadcastConfigurationTableView.getSelectionModel().selectedItemProperty()
+            TableColumn stateColumn = new TableColumn("Status");
+            stateColumn.setCellValueFactory(new PropertyValueFactory<>("broadcastState"));
+
+            mConfiguredBroadcastTableView.getColumns().addAll(enabledColumn, nameColumn, typeColumn, stateColumn);
+
+            mConfiguredBroadcastTableView.getSelectionModel().selectedItemProperty()
                     .addListener((observable, oldValue, newValue) -> setBroadcastConfiguration(newValue));
         }
 
-        return mBroadcastConfigurationTableView;
+        return mConfiguredBroadcastTableView;
+    }
+
+    /**
+     * Menu item to create a broadcastify configuration
+     */
+    public class CreateBroadcastifyMenuItem extends MenuItem
+    {
+        private UserFeedBroadcast mUserFeedBroadcast;
+
+        public CreateBroadcastifyMenuItem(UserFeedBroadcast userFeedBroadcast)
+        {
+            mUserFeedBroadcast = userFeedBroadcast;
+            setText("Broadcastify: " + mUserFeedBroadcast.getDescription());
+            setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    BroadcastConfiguration configuration = BroadcastifyConfiguration.from(mUserFeedBroadcast);
+
+                    if(configuration != null)
+                    {
+                        ConfiguredBroadcast configuredBroadcast = mPlaylistManager.getBroadcastModel()
+                            .addBroadcastConfiguration(configuration);
+                        getConfiguredBroadcastTableView().getSelectionModel().select(configuredBroadcast);
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Menu item to create a new broadcast configuration
+     */
+    public class CreateBroadcastConfigurationMenuItem extends MenuItem
+    {
+        private BroadcastServerType mBroadcastServerType;
+
+        public CreateBroadcastConfigurationMenuItem(BroadcastServerType type)
+        {
+            setText(type.toString());
+            mBroadcastServerType = type;
+            setOnAction(new EventHandler<ActionEvent>()
+            {
+                @Override
+                public void handle(ActionEvent event)
+                {
+                    BroadcastConfiguration config = BroadcastFactory.getConfiguration(mBroadcastServerType, BroadcastFormat.MP3);
+                    ConfiguredBroadcast configuredBroadcast = mPlaylistManager.getBroadcastModel()
+                        .addBroadcastConfiguration(config);
+                    getConfiguredBroadcastTableView().getSelectionModel().select(configuredBroadcast);
+                }
+            });
+        }
     }
 }
