@@ -23,12 +23,18 @@
 package io.github.dsheirer.gui.playlist.streaming;
 
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
+import io.github.dsheirer.playlist.PlaylistManager;
 
 /**
  * Stream configuration editor for Icecast 2.4+ HTTP broadcast
  */
 public class IcecastHTTPStreamEditor extends IcecastStreamEditor
 {
+    public IcecastHTTPStreamEditor(PlaylistManager playlistManager)
+    {
+        super(playlistManager);
+    }
+
     @Override
     public BroadcastServerType getBroadcastServerType()
     {

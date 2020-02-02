@@ -85,10 +85,11 @@ public class StreamingEditor extends SplitPane
     private Tab mAliasTab;
     private Label mRadioReferenceLoginLabel;
     private AbstractStreamEditor mCurrentEditor;
-    private UnknownStreamEditor mUnknownEditor = new UnknownStreamEditor();
+    private UnknownStreamEditor mUnknownEditor;
     private Map<BroadcastServerType, AbstractStreamEditor> mEditorMap = new HashMap();
     private List<UserFeedBroadcast> mBroadcastifyFeeds = new ArrayList<>();
     private ScrollPane mEditorScrollPane;
+    private StreamAliasSelectionEditor mStreamAliasSelectionEditor;
 
     /**
      * Constructs an instance
@@ -97,7 +98,7 @@ public class StreamingEditor extends SplitPane
     public StreamingEditor(PlaylistManager playlistManager)
     {
         mPlaylistManager = playlistManager;
-
+        mUnknownEditor = new UnknownStreamEditor(mPlaylistManager);
         mPlaylistManager.getRadioReference().loggedOnProperty().addListener(new ChangeListener<Boolean>()
         {
             @Override
@@ -200,7 +201,7 @@ public class StreamingEditor extends SplitPane
 
                     if(editor == null)
                     {
-                        editor = StreamEditorFactory.getEditor(configType);
+                        editor = StreamEditorFactory.getEditor(configType, mPlaylistManager);
 
                         if(editor != null)
                         {
@@ -218,7 +219,11 @@ public class StreamingEditor extends SplitPane
             }
         }
 
-        getCurrentEditor().setItem(configuredBroadcast.getBroadcastConfiguration());
+        BroadcastConfiguration broadcastConfiguration = configuredBroadcast != null ?
+            configuredBroadcast.getBroadcastConfiguration() : null;
+
+        getCurrentEditor().setItem(broadcastConfiguration);
+        getStreamAliasSelectionEditor().setBroadcastConfiguration(broadcastConfiguration);
     }
 
     /**
@@ -246,6 +251,16 @@ public class StreamingEditor extends SplitPane
                 }
             });
         }
+    }
+
+    private StreamAliasSelectionEditor getStreamAliasSelectionEditor()
+    {
+        if(mStreamAliasSelectionEditor == null)
+        {
+            mStreamAliasSelectionEditor = new StreamAliasSelectionEditor(mPlaylistManager);
+        }
+
+        return mStreamAliasSelectionEditor;
     }
 
     private Label getRadioReferenceLoginLabel()
@@ -297,6 +312,7 @@ public class StreamingEditor extends SplitPane
         if(mAliasTab == null)
         {
             mAliasTab = new Tab("Aliases");
+            mAliasTab.setContent(getStreamAliasSelectionEditor());
         }
 
         return mAliasTab;
@@ -408,7 +424,7 @@ public class StreamingEditor extends SplitPane
             typeColumn.setCellValueFactory(new PropertyValueFactory<>("broadcastServerType"));
 
 
-            TableColumn stateColumn = new TableColumn("Status");
+            TableColumn stateColumn = new TableColumn("Stream Status");
             stateColumn.setCellValueFactory(new PropertyValueFactory<>("broadcastState"));
 
             mConfiguredBroadcastTableView.getColumns().addAll(enabledColumn, nameColumn, typeColumn, stateColumn);

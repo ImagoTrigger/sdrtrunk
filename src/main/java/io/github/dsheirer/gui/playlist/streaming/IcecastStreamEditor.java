@@ -24,6 +24,7 @@ package io.github.dsheirer.gui.playlist.streaming;
 
 
 import io.github.dsheirer.audio.broadcast.icecast.IcecastConfiguration;
+import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
@@ -42,8 +43,9 @@ public abstract class IcecastStreamEditor extends AbstractStreamEditor<IcecastCo
     private TextField mGenreTextField;
     private TextField mURLTextField;
 
-    public IcecastStreamEditor()
+    public IcecastStreamEditor(PlaylistManager playlistManager)
     {
+        super(playlistManager);
     }
 
     @Override

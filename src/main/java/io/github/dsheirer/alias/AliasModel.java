@@ -28,6 +28,8 @@ import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
@@ -43,6 +45,7 @@ import java.util.Map;
  */
 public class AliasModel extends AbstractTableModel
 {
+    private final static Logger mLog = LoggerFactory.getLogger(AliasModel.class);
     private static final long serialVersionUID = 1L;
 
     public static final int COLUMN_LIST = 0;
@@ -295,6 +298,67 @@ public class AliasModel extends AbstractTableModel
                     if(broadcastChannel.getChannelName().contentEquals(previousName))
                     {
                         broadcastChannel.setChannelName(newName);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Indicates that one or more of the aliases managed by this model are configured to stream to the specified
+     * broadcast channel argument.
+     * @param broadcastChannel to check
+     * @return true if the broadcast channel is non-null, non-empty and at least one alias is configured to stream to
+     * the specified stream name.
+     */
+    public boolean hasAliasesWithBroadcastChannel(String broadcastChannel)
+    {
+        if(broadcastChannel == null || broadcastChannel.isEmpty())
+        {
+            return false;
+        }
+
+        for(Alias alias: mAliases)
+        {
+            if(alias.hasBroadcastChannel(broadcastChannel))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Updates all aliases configured to stream to the previousStreamName with the updatedStreamName
+     * @param previousStreamName to be removed
+     * @param updatedStreamName to be added
+     */
+    public void updateBroadcastChannel(String previousStreamName, String updatedStreamName)
+    {
+        if(previousStreamName == null || previousStreamName.isEmpty() || updatedStreamName == null || updatedStreamName.isEmpty())
+        {
+            return;
+        }
+
+        for(Alias alias: mAliases)
+        {
+            if(alias.hasBroadcastChannel(previousStreamName))
+            {
+                mLog.debug("Updating alias: " + alias.getName());
+                for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
+                {
+                    mLog.debug("Inspecting Channel: " + broadcastChannel.getChannelName());
+                    if(broadcastChannel.getChannelName().contentEquals(previousStreamName))
+                    {
+                        mLog.debug("Removing channel:" + broadcastChannel.getChannelName());
+                        alias.removeAliasID(broadcastChannel);
+
+                        if(!alias.hasBroadcastChannel(updatedStreamName))
+                        {
+                            mLog.debug("Adding new channel: " + updatedStreamName);
+                            alias.addAliasID(new BroadcastChannel(updatedStreamName));
+                        }
                     }
                 }
             }

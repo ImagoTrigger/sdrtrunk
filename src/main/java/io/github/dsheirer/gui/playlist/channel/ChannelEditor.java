@@ -210,6 +210,7 @@ public class ChannelEditor extends SplitPane
 
         return mChannelConfigurationEditor;
     }
+
     private HBox getSearchBox()
     {
         if(mSearchBox == null)
@@ -232,7 +233,6 @@ public class ChannelEditor extends SplitPane
         if(mSearchField == null)
         {
             mSearchField = TextFields.createClearableTextField();
-
         }
 
         return mSearchField;

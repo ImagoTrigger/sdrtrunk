@@ -26,10 +26,15 @@ import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.gui.control.IntegerTextField;
 import io.github.dsheirer.gui.playlist.Editor;
+import io.github.dsheirer.playlist.PlaylistManager;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
+import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -39,11 +44,14 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.controlsfx.control.ToggleSwitch;
 
+import java.util.Optional;
+
 /**
  * Base class for broadcast configuration editors.
  */
 public abstract class AbstractStreamEditor<T extends BroadcastConfiguration> extends Editor<T>
 {
+    private PlaylistManager mPlaylistManager;
     private Button mSaveButton;
     private Button mResetButton;
     private TextField mFormatField;
@@ -61,8 +69,10 @@ public abstract class AbstractStreamEditor<T extends BroadcastConfiguration> ext
     /**
      * Constructs an instance
      */
-    public AbstractStreamEditor()
+    public AbstractStreamEditor(PlaylistManager playlistManager)
     {
+        mPlaylistManager = playlistManager;
+
         VBox buttonBox = new VBox();
         buttonBox.setPadding(new Insets(10,10,10,10));
         buttonBox.setSpacing(10);
@@ -124,13 +134,44 @@ public abstract class AbstractStreamEditor<T extends BroadcastConfiguration> ext
 
         if(configuration != null)
         {
-            configuration.setName(getNameTextField().getText());
             configuration.setEnabled(getEnabledSwitch().isSelected());
             configuration.setHost(getHostTextField().getText());
             configuration.setPort(getPortTextField().get());
             configuration.setPassword(getMaskedPasswordTextField().getText());
             configuration.setDelay(getDelayTextField().get() * 1000); //Convert seconds to millis
             configuration.setMaximumRecordingAge(getMaxAgeTextField().get() * 1000); //Convert seconds to millis
+
+            //Detect stream name change so that we can update any aliases that might be using the previous name
+            String previousName = configuration.getName();
+            String updatedName = getNameTextField().getText();
+            configuration.setName(getNameTextField().getText());
+
+            if(previousName != null && !previousName.isEmpty() && !updatedName.contentEquals(previousName))
+            {
+                if(mPlaylistManager.getAliasModel().hasAliasesWithBroadcastChannel(previousName))
+                {
+                    Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                    alert.getButtonTypes().clear();
+                    alert.getButtonTypes().addAll(ButtonType.NO, ButtonType.YES);
+                    alert.setTitle("Update Aliases");
+                    alert.setHeaderText("Aliases must be updated to new stream name");
+                    alert.setContentText("Do you want to update these aliases?");
+                    alert.initOwner(((Node)getSaveButton()).getScene().getWindow());
+
+                    //Workaround for JavaFX KDE on Linux bug in FX 10/11: https://bugs.openjdk.java.net/browse/JDK-8179073
+                    alert.setResizable(true);
+                    alert.onShownProperty().addListener(e -> {
+                        Platform.runLater(() -> alert.setResizable(false));
+                    });
+
+                    Optional<ButtonType> result = alert.showAndWait();
+
+                    if(result.get() == ButtonType.YES)
+                    {
+                        mPlaylistManager.getAliasModel().updateBroadcastChannel(previousName, updatedName);
+                    }
+                }
+            }
         }
 
         modifiedProperty().set(false);

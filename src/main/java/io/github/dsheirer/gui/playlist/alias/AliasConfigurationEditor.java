@@ -130,7 +130,6 @@ public class AliasConfigurationEditor extends Editor<Alias>
 
             Color color = ColorUtil.fromInteger(alias.getColor());
             getColorPicker().setValue(color);
-            Color colorUpdated = getColorPicker().getValue();
         }
         else
         {
@@ -158,8 +157,6 @@ public class AliasConfigurationEditor extends Editor<Alias>
                 alias.setName(getNameField().getText());
                 alias.setRecordable(getRecordToggleSwitch().isSelected());
                 alias.setColor(ColorUtil.toInteger(getColorPicker().getValue()));
-
-                System.out.println("Alias - Recordable:" + alias.isRecordable() + " Streamable:" + alias.isStreamable());
             }
 
             modifiedProperty().set(false);
@@ -199,9 +196,10 @@ public class AliasConfigurationEditor extends Editor<Alias>
         if(mStreamPane == null)
         {
             VBox buttonBox = new VBox();
+            buttonBox.setMaxHeight(Double.MAX_VALUE);
+            buttonBox.setAlignment(Pos.CENTER);
             buttonBox.setSpacing(5);
-            buttonBox.getChildren().addAll(new Label(" "), getAddAllStreamsButton(), getAddStreamButton(),
-                getRemoveStreamButton(), getRemoveAllStreamsButton());
+            buttonBox.getChildren().addAll(new Label(" "), getAddStreamButton(), getRemoveStreamButton());
 
             VBox availableBox = new VBox();
             VBox.setVgrow(getAvailableStreamsView(), Priority.ALWAYS);

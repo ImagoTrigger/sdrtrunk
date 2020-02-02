@@ -25,6 +25,7 @@ package io.github.dsheirer.gui.playlist.streaming;
 
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
+import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
@@ -37,8 +38,9 @@ public class UnknownStreamEditor extends AbstractStreamEditor<BroadcastConfigura
 {
     private GridPane mEditorPane;
 
-    public UnknownStreamEditor()
+    public UnknownStreamEditor(PlaylistManager playlistManager)
     {
+        super(playlistManager);
     }
 
     public BroadcastServerType getBroadcastServerType()

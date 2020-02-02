@@ -26,6 +26,7 @@ package io.github.dsheirer.gui.playlist.streaming;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfiguration;
 import io.github.dsheirer.gui.control.IntegerTextField;
+import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
@@ -41,8 +42,9 @@ public class BroadcastifyStreamEditor extends AbstractStreamEditor<BroadcastifyC
     private TextField mMountPointTextField;
     private IntegerTextField mFeedIdTextField;
 
-    public BroadcastifyStreamEditor()
+    public BroadcastifyStreamEditor(PlaylistManager playlistManager)
     {
+        super(playlistManager);
     }
 
     @Override

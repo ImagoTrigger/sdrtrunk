@@ -25,6 +25,7 @@ package io.github.dsheirer.gui.playlist.streaming;
 
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
+import io.github.dsheirer.playlist.PlaylistManager;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.control.Label;
@@ -42,8 +43,9 @@ public class ShoutcastV1StreamEditor extends AbstractStreamEditor<ShoutcastV1Con
     private TextField mGenreTextField;
     private ToggleSwitch mPublicToggleSwitch;
 
-    public ShoutcastV1StreamEditor()
+    public ShoutcastV1StreamEditor(PlaylistManager playlistManager)
     {
+        super(playlistManager);
     }
 
     @Override

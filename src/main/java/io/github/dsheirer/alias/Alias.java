@@ -42,6 +42,7 @@ import javafx.collections.ObservableList;
 import javafx.util.Callback;
 
 import java.awt.Color;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -523,6 +524,32 @@ public class Alias
         return false;
     }
 
+    /**
+     * Removes any broadcast channel(s) that match the argument
+     */
+    public void removeBroadcastChannel(String channel)
+    {
+        if(channel == null || channel.isEmpty())
+        {
+            return;
+        }
+
+        List<AliasID> toRemove = new ArrayList<>();
+
+        for(AliasID aliasID: getAliasIdentifiers())
+        {
+            if(aliasID instanceof BroadcastChannel &&
+                ((BroadcastChannel)aliasID).getChannelName().contentEquals(channel))
+            {
+                toRemove.add(aliasID);
+            }
+        }
+
+        for(AliasID aliasID: toRemove)
+        {
+            removeAliasID(aliasID);
+        }
+    }
 
     /**
      * Creates an observable property extractor for use with observable lists to detect changes internal to this object.
