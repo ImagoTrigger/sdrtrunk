@@ -136,6 +136,8 @@ import io.github.dsheirer.module.decode.p25.reference.ServiceOptions;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.lang.*;
+
 
 /**
  * Decoder state for an APCO25 channel.  Maintains the call/data/idle state of the channel and produces events by
@@ -153,6 +155,12 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
     private P25TrafficChannelManager mTrafficChannelManager;
     private Listener<ChannelEvent> mChannelEventListener;
     private DecodeEvent mCurrentCallEvent;
+
+    private static long TSBKLastTime = 0;
+    private static Integer TSBKCounter = 0;
+    private static long TSBKLastTime2 = 0;
+    private static Integer TSBKCounter2 = 0;
+
 
     /**
      * Constructs an APCO-25 decoder state with an optional traffic channel manager.
@@ -1164,6 +1172,28 @@ public class P25P1DecoderState extends DecoderState implements IChannelEventList
         if(message.isValid() && message instanceof TSBKMessage)
         {
             TSBKMessage tsbk = (TSBKMessage)message;
+            if (tsbk.getNAC().toString().contains("1026")) {
+
+                if (tsbk.getTimestamp() > TSBKLastTime) {
+
+                    TSBKLastTime = tsbk.getTimestamp() + 5001;
+                    mLog.info("402 - TSBK/s: " + TSBKCounter / 5 + " @ " + System.currentTimeMillis() / 1000L);
+                    TSBKCounter = 0;
+                } else {
+                    TSBKCounter++;
+                }
+            }
+            if (tsbk.getNAC().toString().contains("1037")) {
+
+                if (tsbk.getTimestamp() > TSBKLastTime2) {
+
+                    TSBKLastTime2 = tsbk.getTimestamp() + 5001;
+                    mLog.info("40D - TSBK/s: " + TSBKCounter2 / 5 + " @ " + System.currentTimeMillis() / 1000L);
+                    TSBKCounter2 = 0;
+                } else {
+                    TSBKCounter2++;
+                }
+            }
 
             switch(tsbk.getOpcode())
             {
